@@ -11,7 +11,7 @@ setup(
     description="AI-Powered Market Regime Detection System",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/KANYINSOLA-OGUNBANJO/AutoRegime",
+    url="https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -35,4 +35,5 @@ setup(
         "yfinance>=0.1.87",
         "seaborn>=0.11.0",
     ],
+
 )
