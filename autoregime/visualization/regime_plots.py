@@ -1,4 +1,4 @@
-Copy"""
+"""
 AutoRegime Visualization Engine
 Creates stunning, professional visualizations of market regime analysis
 """
