@@ -1,4 +1,4 @@
-"""
+Copy"""
 AutoRegime Visualization Engine
 Creates stunning, professional visualizations of market regime analysis
 """
@@ -14,10 +14,21 @@ from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
-from .style_config import (
-    setup_matplotlib_style, get_regime_color, create_plotly_layout,
-    REGIME_COLORS, PLOT_STYLE, PLOTLY_THEME
-)
+# Comment out the style import for now since it's not available
+# from .style_config import (
+#     setup_matplotlib_style, get_regime_color, create_plotly_layout,
+#     REGIME_COLORS, PLOT_STYLE, PLOTLY_THEME
+# )
+
+# Simple color function to replace missing import
+def get_regime_color(regime_name, regime_id=0):
+    """Simple color mapping for regimes."""
+    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8']
+    return colors[regime_id % len(colors)]
+
+def setup_matplotlib_style():
+    """Simple matplotlib style setup."""
+    plt.style.use('seaborn-v0_8')
 
 class RegimeVisualizer:
     """
@@ -269,103 +280,103 @@ class RegimeVisualizer:
             return self._plot_static_performance()
     
     def _plot_interactive_performance(self):
-    """Create interactive performance analysis."""
-    # Prepare performance data
-    perf_data = []
-    for regime_id, char in self.detector.regime_characteristics.items():
-        regime_name = self.detector.regime_names.get(regime_id, f'Regime {regime_id}')
-        perf_data.append({
-            'Regime': regime_name,
-            'Annual Return': char['mean_return'],
-            'Annual Volatility': char['volatility'], 
-            'Sharpe Ratio': char['sharpe_ratio'],
-            'Max Drawdown': char['max_drawdown'],
-            'Frequency': char['frequency'],
-            'Avg Duration': char['avg_duration']
-        })
-    
-    perf_df = pd.DataFrame(perf_data)
-    
-    # Create simple 2x2 subplots (no pie chart to avoid errors)
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=(
-            '📊 Risk-Return Profile',
-            '🎯 Sharpe Ratio Comparison', 
-            '⏱️ Regime Duration Analysis',  
-            '📈 Frequency Analysis'
+        """Create interactive performance analysis."""
+        # Prepare performance data
+        perf_data = []
+        for regime_id, char in self.detector.regime_characteristics.items():
+            regime_name = self.detector.regime_names.get(regime_id, f'Regime {regime_id}')
+            perf_data.append({
+                'Regime': regime_name,
+                'Annual Return': char['mean_return'],
+                'Annual Volatility': char['volatility'], 
+                'Sharpe Ratio': char['sharpe_ratio'],
+                'Max Drawdown': char['max_drawdown'],
+                'Frequency': char['frequency'],
+                'Avg Duration': char['avg_duration']
+            })
+        
+        perf_df = pd.DataFrame(perf_data)
+        
+        # Create simple 2x2 subplots (no pie chart to avoid errors)
+        fig = make_subplots(
+            rows=2, cols=2,
+            subplot_titles=(
+                '📊 Risk-Return Profile',
+                '🎯 Sharpe Ratio Comparison', 
+                '⏱️ Regime Duration Analysis',  
+                '📈 Frequency Analysis'
+            )
         )
-    )
-    
-    # Plot 1: Risk-Return Scatter
-    for _, row in perf_df.iterrows():
-        color = get_regime_color(row['Regime'])
-        fig.add_trace(
-            go.Scatter(
-                x=[row['Annual Volatility']],
-                y=[row['Annual Return']],
-                mode='markers+text',
-                name=row['Regime'],
-                marker=dict(
-                    color=color,
-                    size=row['Frequency'] * 500,
-                    opacity=0.7
+        
+        # Plot 1: Risk-Return Scatter
+        for _, row in perf_df.iterrows():
+            color = get_regime_color(row['Regime'])
+            fig.add_trace(
+                go.Scatter(
+                    x=[row['Annual Volatility']],
+                    y=[row['Annual Return']],
+                    mode='markers+text',
+                    name=row['Regime'],
+                    marker=dict(
+                        color=color,
+                        size=row['Frequency'] * 500,
+                        opacity=0.7
+                    ),
+                    text=row['Regime'],
+                    textposition="top center"
                 ),
-                text=row['Regime'],
-                textposition="top center"
+                row=1, col=1
+            )
+        
+        # Plot 2: Sharpe Ratio Bar Chart
+        fig.add_trace(
+            go.Bar(
+                x=perf_df['Regime'],
+                y=perf_df['Sharpe Ratio'],
+                marker_color=[get_regime_color(regime) for regime in perf_df['Regime']],
+                name='Sharpe Ratio',
+                showlegend=False
             ),
-            row=1, col=1
+            row=1, col=2
         )
-    
-    # Plot 2: Sharpe Ratio Bar Chart
-    fig.add_trace(
-        go.Bar(
-            x=perf_df['Regime'],
-            y=perf_df['Sharpe Ratio'],
-            marker_color=[get_regime_color(regime) for regime in perf_df['Regime']],
-            name='Sharpe Ratio',
-            showlegend=False
-        ),
-        row=1, col=2
-    )
-    
-    # Plot 3: Duration Analysis
-    fig.add_trace(
-        go.Bar(
-            x=perf_df['Regime'],
-            y=perf_df['Avg Duration'],
-            marker_color=[get_regime_color(regime) for regime in perf_df['Regime']],
-            name='Avg Duration',
-            showlegend=False
-        ),
-        row=2, col=1
-    )
-    
-    # Plot 4: Frequency Bar Chart (instead of pie)
-    fig.add_trace(
-        go.Bar(
-            x=perf_df['Regime'],
-            y=perf_df['Frequency'],
-            marker_color=[get_regime_color(regime) for regime in perf_df['Regime']],
-            name='Frequency',
-            showlegend=False
-        ),
-        row=2, col=2
-    )
-    
-    # Update layout
-    fig.update_layout(
-        height=800,
-        title={
-            'text': '📊 AutoRegime Performance Analytics',
-            'x': 0.5,
-            'font': {'size': 24}
-        },
-        showlegend=False,
-        template='plotly_white'
-    )
-    
-    return fig
+        
+        # Plot 3: Duration Analysis
+        fig.add_trace(
+            go.Bar(
+                x=perf_df['Regime'],
+                y=perf_df['Avg Duration'],
+                marker_color=[get_regime_color(regime) for regime in perf_df['Regime']],
+                name='Avg Duration',
+                showlegend=False
+            ),
+            row=2, col=1
+        )
+        
+        # Plot 4: Frequency Bar Chart (instead of pie)
+        fig.add_trace(
+            go.Bar(
+                x=perf_df['Regime'],
+                y=perf_df['Frequency'],
+                marker_color=[get_regime_color(regime) for regime in perf_df['Regime']],
+                name='Frequency',
+                showlegend=False
+            ),
+            row=2, col=2
+        )
+        
+        # Update layout
+        fig.update_layout(
+            height=800,
+            title={
+                'text': '📊 AutoRegime Performance Analytics',
+                'x': 0.5,
+                'font': {'size': 24}
+            },
+            showlegend=False,
+            template='plotly_white'
+        )
+        
+        return fig
     
     def plot_regime_transitions(self, interactive=True):
         """
