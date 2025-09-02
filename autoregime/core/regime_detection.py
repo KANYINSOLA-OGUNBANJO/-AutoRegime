@@ -116,7 +116,7 @@ class AutoRegimeDetector:
         if self.verbose:
             self._print_regime_summary()
             
-        logger.info("✅ AutoRegime detection completed successfully!")
+        logger.info("AutoRegime detection completed successfully!")
         return self
     
     def _validate_input_data(self, data: pd.DataFrame) -> None:
@@ -251,7 +251,7 @@ class AutoRegimeDetector:
         if best_model is None:
             raise ValueError("Failed to fit any regime model")
         
-        logger.info(f"✅ Optimal regime count discovered: {best_n_regimes}")
+        logger.info(f"Optimal regime count discovered: {best_n_regimes}")
         return best_model, best_n_regimes
     
     def _fit_hmm_model(self, features: np.ndarray, n_regimes: int) -> hmm.GaussianHMM:
