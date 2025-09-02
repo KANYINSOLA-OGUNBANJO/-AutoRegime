@@ -184,7 +184,7 @@ class RegimeVisualizer:
         fig.update_layout(
             height=800,
             title={
-                'text': '🚀 AutoRegime Analysis Dashboard',
+                'text': 'AutoRegime Analysis Dashboard',
                 'x': 0.5,
                 'font': {'size': 24}
             },
@@ -420,7 +420,7 @@ class RegimeVisualizer:
             
             fig.update_layout(
                 title={
-                    'text': '🔄 Regime Transition Matrix',
+                    'text': 'Regime Transition Matrix',
                     'x': 0.5,
                     'font': {'size': 20}
                 },
@@ -442,7 +442,7 @@ class RegimeVisualizer:
                 cmap='viridis',
                 cbar_kws={'label': 'Transition Probability'}
             )
-            plt.title('🔄 Regime Transition Matrix', fontsize=16, fontweight='bold')
+            plt.title('Regime Transition Matrix', fontsize=16, fontweight='bold')
             plt.xlabel('To Regime')
             plt.ylabel('From Regime')
             plt.tight_layout()
@@ -471,7 +471,7 @@ class RegimeVisualizer:
         import os
         os.makedirs(output_dir, exist_ok=True)
         
-        print(f"📊 Exporting AutoRegime analysis to: {output_dir}")
+        print(f"Exporting AutoRegime analysis to: {output_dir}")
         
         # Export summary table
         summary_table = self.create_regime_summary_table()
@@ -559,7 +559,7 @@ class RegimeVisualizer:
         
         # Return distribution
         axes[1,1].bar(perf_df['Regime'], perf_df['Return'], color=colors, alpha=0.7)
-        axes[1,1].set_title('💰 Annual Returns by Regime')
+        axes[1,1].set_title('Annual Returns by Regime')
         axes[1,1].set_ylabel('Annual Return')
         axes[1,1].tick_params(axis='x', rotation=45)
         axes[1,1].grid(True, alpha=0.3)
