@@ -152,10 +152,10 @@ class AutoRegimeDashboard:
             **Revolutionary AI-powered market regime detection system**
             
             ### What it does:
-            - 🔍 **Automatically discovers** hidden market patterns
-            - 📊 **Identifies regime changes** (bull, bear, crisis, recovery)
-            - 🎯 **Predicts current conditions** with confidence scores
-            - 📈 **Professional visualizations** for analysis
+            - **Automatically discovers** hidden market patterns
+            - **Identifies regime changes** (bull, bear, crisis, recovery)
+            - **Predicts current conditions** with confidence scores
+            - **Professional visualizations** for analysis
             
             ### Get started:
             1. Choose an asset universe from the sidebar
@@ -204,7 +204,7 @@ class AutoRegimeDashboard:
     
     def _rerun_analysis(self, max_regimes, min_duration):
         """Rerun analysis with new parameters."""
-        with st.spinner("🔄 Rerunning analysis with new parameters..."):
+        with st.spinner("Rerunning analysis with new parameters..."):
             try:
                 data = st.session_state['data']
                 
@@ -298,7 +298,7 @@ class AutoRegimeDashboard:
             days = len(data)
             years = days / 252
             st.metric(
-                "📅 Analysis Period",
+                "Analysis Period",
                 f"{years:.1f} years",
                 f"{days} trading days"
             )
