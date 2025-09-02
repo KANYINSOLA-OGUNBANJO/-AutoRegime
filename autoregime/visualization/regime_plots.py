@@ -229,7 +229,7 @@ class RegimeVisualizer:
         # Plot 2: Cumulative returns
         cumulative_returns = (1 + self.regime_df['market_return']).cumprod()
         axes[1].plot(dates, cumulative_returns, 'k-', linewidth=2, label='Cumulative Return')
-        axes[1].set_title('📈 Cumulative Returns', fontsize=14, fontweight='bold')
+        axes[1].set_title('Cumulative Returns', fontsize=14, fontweight='bold')
         axes[1].set_ylabel('Cumulative Return')
         axes[1].grid(True, alpha=0.3)
         
