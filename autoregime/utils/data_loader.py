@@ -215,7 +215,7 @@ class MarketDataLoader:
         else:
             raise ValueError(f"Unknown universe: {universe_name}. Available: {list(universe_map.keys()) + ['all']}")
         
-        print(f"🌟 Loading '{universe_name}' universe ({len(symbols)} assets)")
+        print(f"Loading '{universe_name}' universe ({len(symbols)} assets)")
         
         return self.load_market_data(symbols, start_date, end_date)
     
