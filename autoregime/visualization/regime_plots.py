@@ -565,7 +565,7 @@ class RegimeVisualizer:
         axes[1,1].grid(True, alpha=0.3)
         axes[1,1].yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{y:.1%}'))
         
-        plt.suptitle('📊 AutoRegime Performance Analytics', fontsize=16, fontweight='bold')
+        plt.suptitle('AutoRegime Performance Analytics', fontsize=16, fontweight='bold')
         plt.tight_layout()
         
         return fig
