@@ -115,7 +115,7 @@ class AutoRegimeDashboard:
         )
         
         # Load data button
-        if st.sidebar.button("🚀 Load Data & Detect Regimes", type="primary"):
+        if st.sidebar.button("Load Data & Detect Regimes", type="primary"):
             self._load_and_analyze_data(universe, start_date.strftime('%Y-%m-%d'))
         
         # Model parameters
@@ -132,13 +132,13 @@ class AutoRegimeDashboard:
                 value=st.session_state.get('min_duration', 5)
             )
             
-            if st.sidebar.button("🔄 Rerun Analysis"):
+            if st.sidebar.button("Rerun Analysis"):
                 self._rerun_analysis(max_regimes, min_duration)
         
         # Export section
         if st.session_state.get('data_loaded', False):
             st.sidebar.markdown("### 💾 Export")
-            if st.sidebar.button("📊 Export Analysis"):
+            if st.sidebar.button("Export Analysis"):
                 self._export_analysis()
     
     def _display_welcome_screen(self):
@@ -307,7 +307,7 @@ class AutoRegimeDashboard:
             # Calculate market volatility
             market_vol = data.mean(axis=1).std() * np.sqrt(252)
             st.metric(
-                "📊 Market Volatility",
+                "Market Volatility",
                 f"{market_vol:.1%}",
                 help="Annualized volatility"
             )
