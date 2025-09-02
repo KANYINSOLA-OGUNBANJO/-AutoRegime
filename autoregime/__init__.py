@@ -226,4 +226,5 @@ __all__ = [
     'version'
 ]
 
-print("🚀 AutoRegime loaded! Try: quick_demo() or launch_dashboard()")
+
+print("AutoRegime loaded! Try: quick_demo() or launch_dashboard()")
