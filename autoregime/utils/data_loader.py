@@ -166,7 +166,7 @@ class MarketDataLoader:
     
     def _prepare_price_data(self, price_data):
         """Prepare aligned price data."""
-        print("💰 Preparing price data...")
+        print("Preparing price data...")
         
         price_df_data = {}
         
@@ -286,7 +286,7 @@ class MarketDataLoader:
         - 2022 rate hike selloff
         - 2023 banking crisis and AI boom
         """
-        print("🔥 Loading crisis periods data for regime analysis...")
+        print("Loading crisis periods data for regime analysis...")
         
         # Load diverse asset classes for better regime detection
         crisis_symbols = [
