@@ -90,9 +90,9 @@ class MarketDataLoader:
         if end_date is None:
             end_date = datetime.now().strftime('%Y-%m-%d')
         
-        print(f"📊 Loading market data for {len(symbols)} assets...")
-        print(f"📅 Period: {start_date} to {end_date}")
-        print(f"🎯 Assets: {', '.join(symbols)}")
+        print(f"Loading market data for {len(symbols)} assets...")
+        print(f"Period: {start_date} to {end_date}")
+        print(f"Assets: {', '.join(symbols)}")
         
         all_data = {}
         failed_symbols = []
@@ -105,7 +105,7 @@ class MarketDataLoader:
                 cache_key = f"{symbol}_{start_date}_{end_date}"
                 if cache_key in self.data_cache:
                     all_data[symbol] = self.data_cache[cache_key]
-                    print("✅ (cached)")
+                    print("(cached)")
                     continue
                 
                 # Download from Yahoo Finance
@@ -113,7 +113,7 @@ class MarketDataLoader:
                 data = ticker.history(start=start_date, end=end_date)
                 
                 if len(data) == 0:
-                    print("❌ No data")
+                    print("No data")
                     failed_symbols.append(symbol)
                     continue
                 
@@ -123,7 +123,7 @@ class MarketDataLoader:
                 print("✅")
                 
             except Exception as e:
-                print(f"❌ Error: {e}")
+                print(f"Error: {e}")
                 failed_symbols.append(symbol)
                 continue
         
@@ -159,8 +159,8 @@ class MarketDataLoader:
         # Remove any rows with all NaN values
         returns_df = returns_df.dropna(how='all')
         
-        print(f"✅ Returns calculated for period: {returns_df.index[0].date()} to {returns_df.index[-1].date()}")
-        print(f"📊 Data shape: {returns_df.shape}")
+        print(f"Returns calculated for period: {returns_df.index[0].date()} to {returns_df.index[-1].date()}")
+        print(f"Data shape: {returns_df.shape}")
         
         return returns_df
     
@@ -176,7 +176,7 @@ class MarketDataLoader:
         price_df = pd.DataFrame(price_df_data)
         price_df = price_df.dropna(how='all')
         
-        print(f"✅ Price data prepared: {price_df.shape}")
+        print(f"Price data prepared: {price_df.shape}")
         return price_df
     
     def load_preset_universe(self, universe_name, start_date='2020-01-01', end_date=None):
@@ -304,7 +304,7 @@ class MarketDataLoader:
 
 def demo_data_loader():
     """Demonstrate the market data loader capabilities."""
-    print("🚀 AutoRegime Market Data Loader Demo")
+    print("AutoRegime Market Data Loader Demo")
     print("=" * 50)
     
     loader = MarketDataLoader()
@@ -314,8 +314,8 @@ def demo_data_loader():
     indices_data = loader.load_preset_universe('indices', start_date='2020-01-01')
     
     print(f"\n✅ Loaded data shape: {indices_data.shape}")
-    print(f"📅 Date range: {indices_data.index[0].date()} to {indices_data.index[-1].date()}")
-    print(f"📈 Assets: {', '.join(indices_data.columns)}")
+    print(f"Date range: {indices_data.index[0].date()} to {indices_data.index[-1].date()}")
+    print(f"Assets: {', '.join(indices_data.columns)}")
     
     # Show summary statistics
     print("\n📊 Market Summary Statistics:")
