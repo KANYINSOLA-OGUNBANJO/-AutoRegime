@@ -28,7 +28,7 @@ def get_regime_color(regime_name, regime_id=0):
 
 def setup_matplotlib_style():
     """Simple matplotlib style setup."""
-    plt.style.use('seaborn-v0_8')
+    plt.style.use('ggplot')  # Nice clean style that you have
 
 class RegimeVisualizer:
     """
