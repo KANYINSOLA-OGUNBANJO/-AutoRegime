@@ -120,7 +120,7 @@ class MarketDataLoader:
                 # Store in cache
                 self.data_cache[cache_key] = data
                 all_data[symbol] = data
-                print("✅")
+                print("")
                 
             except Exception as e:
                 print(f"Error: {e}")
@@ -141,7 +141,7 @@ class MarketDataLoader:
     
     def _calculate_returns(self, price_data):
         """Calculate daily returns from price data."""
-        print("📈 Calculating daily returns...")
+        print("Calculating daily returns...")
         
         returns_data = {}
         
@@ -310,7 +310,7 @@ def demo_data_loader():
     loader = MarketDataLoader()
     
     # Load major indices for regime analysis
-    print("\n📊 Loading major market indices...")
+    print("\n Loading major market indices...")
     indices_data = loader.load_preset_universe('indices', start_date='2020-01-01')
     
     print(f"\n Loaded data shape: {indices_data.shape}")
