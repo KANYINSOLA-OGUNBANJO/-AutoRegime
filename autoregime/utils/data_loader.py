@@ -131,7 +131,7 @@ class MarketDataLoader:
             raise ValueError("No data could be downloaded for any symbol")
         
         if failed_symbols:
-            print(f"⚠️ Failed to download: {', '.join(failed_symbols)}")
+            print(f"Failed to download: {', '.join(failed_symbols)}")
         
         # Process data based on return_type
         if return_type == 'returns':
@@ -233,7 +233,7 @@ class MarketDataLoader:
         pd.DataFrame
             Summary statistics
         """
-        print("📊 Generating market summary statistics...")
+        print("Generating market summary statistics...")
         
         summary_stats = {}
         
@@ -313,12 +313,12 @@ def demo_data_loader():
     print("\n📊 Loading major market indices...")
     indices_data = loader.load_preset_universe('indices', start_date='2020-01-01')
     
-    print(f"\n✅ Loaded data shape: {indices_data.shape}")
+    print(f"\n Loaded data shape: {indices_data.shape}")
     print(f"Date range: {indices_data.index[0].date()} to {indices_data.index[-1].date()}")
     print(f"Assets: {', '.join(indices_data.columns)}")
     
     # Show summary statistics
-    print("\n📊 Market Summary Statistics:")
+    print("\n Market Summary Statistics:")
     summary = loader.get_market_summary(indices_data)
     print(summary)
     
