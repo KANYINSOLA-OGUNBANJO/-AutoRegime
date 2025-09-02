@@ -15,12 +15,12 @@ def quick_demo():
     """
     Run complete AutoRegime demo with one function call.
     """
-    print("🚀 AutoRegime Quick Demo Starting...")
+    print("AutoRegime Quick Demo Starting...")
     print("="*50)
     
     try:
         # Load real market data
-        print("📊 Loading real market data (2022-2024)...")
+        print("Loading real market data (2022-2024)...")
         loader = MarketDataLoader()
         data = loader.load_preset_universe('indices', start_date='2022-01-01')
         
@@ -28,12 +28,12 @@ def quick_demo():
         print(f"Period: {data.index[0].date()} to {data.index[-1].date()}")
         
         # Run AutoRegime detection
-        print("\n🧠 Running AI regime detection...")
+        print("\nRunning AI regime detection...")
         detector = AutoRegimeDetector(max_regimes=4, verbose=True)
         detector.fit(data)
         
         # Current regime prediction
-        print("\n🎯 CURRENT MARKET ANALYSIS")
+        print("\nCURRENT MARKET ANALYSIS")
         print("-"*30)
         
         recent_data = data.tail(21)
@@ -46,17 +46,17 @@ def quick_demo():
         # Show regime characteristics
         if current_regime in detector.regime_characteristics:
             char = detector.regime_characteristics[current_regime]
-            print(f"\n📋 {regime_name} Characteristics:")
-            print(f"  💰 Expected Annual Return: {char['mean_return']:.1%}")
-            print(f"  📊 Expected Volatility: {char['volatility']:.1%}")
-            print(f"  🎯 Sharpe Ratio: {char['sharpe_ratio']:.2f}")
+            print(f"\n{regime_name} Characteristics:")
+            print(f"  Expected Annual Return: {char['mean_return']:.1%}")
+            print(f"  Expected Volatility: {char['volatility']:.1%}")
+            print(f"  Sharpe Ratio: {char['sharpe_ratio']:.2f}")
         
         # Create visualizations
-        print(f"\n🎨 Creating visualizations...")
+        print(f"\nCreating visualizations...")
         visualizer = RegimeVisualizer(detector, data)
         timeline_fig = visualizer.plot_regime_timeline(interactive=False)
         
-        print(f"\n🎉 AutoRegime Demo Complete!")
+        print(f"\nAutoRegime Demo Complete!")
         print("="*50)
         
         return detector, data, visualizer
@@ -73,7 +73,7 @@ def launch_dashboard():
     import sys
     import os
     
-    print("🌐 Launching AutoRegime Dashboard...")
+    print("Launching AutoRegime Dashboard...")
     
     try:
         # Find dashboard file
@@ -88,14 +88,14 @@ def launch_dashboard():
         print("Starting Streamlit server...")
         print("Dashboard will open in your browser automatically")
         print("URL: http://localhost:8501")
-        print("\n💡 To stop the dashboard: Press Ctrl+C in terminal")
+        print("\nTo stop the dashboard: Press Ctrl+C in terminal")
         
         # Launch Streamlit
         subprocess.run([sys.executable, '-m', 'streamlit', 'run', dashboard_path])
         
     except Exception as e:
         print(f"Error launching dashboard: {str(e)}")
-        print("\n💡 Alternative: Try the demo with visualizations")
+        print("\nAlternative: Try the demo with visualizations")
         print("Run: quick_demo()")
 
 def quick_analysis(symbols, start_date='2023-01-01'):
@@ -146,7 +146,7 @@ def full_historical_analysis():
     - COVID crash & recovery
     - Current period
     """
-    print("🕰️ FULL HISTORICAL AUTOREGIME ANALYSIS")
+    print("FULL HISTORICAL AUTOREGIME ANALYSIS")
     print("="*60)
     print("Analyzing 24+ years of market data across multiple cycles...")
     
@@ -154,14 +154,14 @@ def full_historical_analysis():
         loader = MarketDataLoader()
         
         # Load maximum historical data
-        print("📊 Loading maximum historical data...")
+        print("Loading maximum historical data...")
         data = loader.load_market_data(['SPY', 'QQQ', 'DIA'], start_date='2000-01-01')
         
         years = len(data) / 252
         print(f"Loaded {years:.1f} years of data ({len(data)} trading days)")
         print(f"Full period: {data.index[0].date()} to {data.index[-1].date()}")
         
-        print("\n🔍 Expected regime discoveries:")
+        print("\nExpected regime discoveries:")
         print("  • Dot-com crash (2000-2002)")
         print("  • Early 2000s recovery (2003-2007)")  
         print("  • 2008 Financial Crisis")
@@ -170,7 +170,7 @@ def full_historical_analysis():
         print("  • Current period (2022-2024)")
         
         # Run comprehensive regime detection
-        print(f"\n🧠 Running regime detection on {years:.1f} years of data...")
+        print(f"\nRunning regime detection on {years:.1f} years of data...")
         print("This may take 2-3 minutes due to large dataset...")
         
         detector = AutoRegimeDetector(
@@ -182,7 +182,7 @@ def full_historical_analysis():
         detector.fit(data)
         
         # Analyze results
-        print(f"\n🎯 HISTORICAL REGIME ANALYSIS RESULTS:")
+        print(f"\nHISTORICAL REGIME ANALYSIS RESULTS:")
         print(f"Discovered {detector.optimal_n_regimes} distinct regimes across {years:.1f} years")
         
         # Show regime characteristics
@@ -196,17 +196,17 @@ def full_historical_analysis():
             print(f"  Sharpe Ratio: {char['sharpe_ratio']:.2f}")
         
         # Create historical timeline
-        print(f"\n🎨 Creating historical regime timeline...")
+        print(f"\nCreating historical regime timeline...")
         visualizer = RegimeVisualizer(detector, data)
         timeline_fig = visualizer.plot_regime_timeline(interactive=False)
         
         # Current regime
         current_regime, confidence = detector.predict_current_regime(data.tail(21))
         regime_name = detector.regime_names.get(current_regime, f'Regime {current_regime}')
-        print(f"\n🚨 CURRENT REGIME (based on 24+ year analysis): {regime_name}")
-        print(f"📊 Confidence: {confidence:.1%}")
+        print(f"\nCURRENT REGIME (based on 24+ year analysis): {regime_name}")
+        print(f"Confidence: {confidence:.1%}")
         
-        print(f"\n🎉 Full historical analysis completed!")
+        print(f"\nFull historical analysis completed!")
         print(f"Successfully analyzed {years:.1f} years across multiple market cycles!")
         
         return detector, data, visualizer
@@ -228,4 +228,5 @@ __all__ = [
 
 
 print("AutoRegime loaded! Try: quick_demo() or launch_dashboard()")
+
 
