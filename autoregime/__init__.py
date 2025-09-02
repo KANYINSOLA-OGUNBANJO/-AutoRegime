@@ -24,8 +24,8 @@ def quick_demo():
         loader = MarketDataLoader()
         data = loader.load_preset_universe('indices', start_date='2022-01-01')
         
-        print(f"✅ Loaded {data.shape[0]} days of data for {data.shape[1]} assets")
-        print(f"📅 Period: {data.index[0].date()} to {data.index[-1].date()}")
+        print(f"Loaded {data.shape[0]} days of data for {data.shape[1]} assets")
+        print(f"Period: {data.index[0].date()} to {data.index[-1].date()}")
         
         # Run AutoRegime detection
         print("\n🧠 Running AI regime detection...")
@@ -40,8 +40,8 @@ def quick_demo():
         current_regime, confidence = detector.predict_current_regime(recent_data)
         regime_name = detector.regime_names.get(current_regime, f'Regime {current_regime}')
         
-        print(f"🚨 CURRENT MARKET REGIME: {regime_name}")
-        print(f"📊 Confidence Level: {confidence:.1%}")
+        print(f"CURRENT MARKET REGIME: {regime_name}")
+        print(f"Confidence Level: {confidence:.1%}")
         
         # Show regime characteristics
         if current_regime in detector.regime_characteristics:
@@ -62,7 +62,7 @@ def quick_demo():
         return detector, data, visualizer
         
     except Exception as e:
-        print(f"❌ Error in demo: {str(e)}")
+        print(f"Error in demo: {str(e)}")
         return None, None, None
 
 def launch_dashboard():
@@ -80,27 +80,27 @@ def launch_dashboard():
         dashboard_path = os.path.join(os.path.dirname(__file__), 'visualization', 'dashboard.py')
         
         if not os.path.exists(dashboard_path):
-            print("❌ Dashboard file not found!")
-            print("💡 Try creating a simple dashboard file or use the demo instead")
-            print("🚀 Run: quick_demo() for visualizations")
+            print("Dashboard file not found!")
+            print("Try creating a simple dashboard file or use the demo instead")
+            print("Run: quick_demo() for visualizations")
             return
         
-        print("🚀 Starting Streamlit server...")
-        print("📱 Dashboard will open in your browser automatically")
-        print("🔗 URL: http://localhost:8501")
+        print("Starting Streamlit server...")
+        print("Dashboard will open in your browser automatically")
+        print("URL: http://localhost:8501")
         print("\n💡 To stop the dashboard: Press Ctrl+C in terminal")
         
         # Launch Streamlit
         subprocess.run([sys.executable, '-m', 'streamlit', 'run', dashboard_path])
         
     except Exception as e:
-        print(f"❌ Error launching dashboard: {str(e)}")
+        print(f"Error launching dashboard: {str(e)}")
         print("\n💡 Alternative: Try the demo with visualizations")
-        print("🚀 Run: quick_demo()")
+        print("Run: quick_demo()")
 
 def quick_analysis(symbols, start_date='2023-01-01'):
     """Quick regime analysis for custom assets."""
-    print(f"🎯 Quick Analysis: {symbols}")
+    print(f"Quick Analysis: {symbols}")
     print("-"*30)
     
     try:
@@ -112,22 +112,22 @@ def quick_analysis(symbols, start_date='2023-01-01'):
         detector = AutoRegimeDetector(max_regimes=4, verbose=False)
         detector.fit(data)
         
-        print(f"✅ Discovered {detector.optimal_n_regimes} regimes")
+        print(f"Discovered {detector.optimal_n_regimes} regimes")
         
         current_regime, confidence = detector.predict_current_regime(data.tail(21))
         regime_name = detector.regime_names.get(current_regime, f'Regime {current_regime}')
-        print(f"🎯 Current regime: {regime_name} ({confidence:.1%})")
+        print(f"Current regime: {regime_name} ({confidence:.1%})")
         
         return detector, data
         
     except Exception as e:
-        print(f"❌ Analysis error: {str(e)}")
+        print(f"Analysis error: {str(e)}")
         return None, None
 
 def version():
     """Display AutoRegime version and system info."""
     import sys
-    print("🚀 AutoRegime System Information")
+    print("AutoRegime System Information")
     print("="*40)
     print(f"AutoRegime Version: {__version__}")
     print(f"Python Version: {sys.version.split()[0]}")
@@ -158,8 +158,8 @@ def full_historical_analysis():
         data = loader.load_market_data(['SPY', 'QQQ', 'DIA'], start_date='2000-01-01')
         
         years = len(data) / 252
-        print(f"✅ Loaded {years:.1f} years of data ({len(data)} trading days)")
-        print(f"📅 Full period: {data.index[0].date()} to {data.index[-1].date()}")
+        print(f"Loaded {years:.1f} years of data ({len(data)} trading days)")
+        print(f"Full period: {data.index[0].date()} to {data.index[-1].date()}")
         
         print("\n🔍 Expected regime discoveries:")
         print("  • Dot-com crash (2000-2002)")
@@ -171,7 +171,7 @@ def full_historical_analysis():
         
         # Run comprehensive regime detection
         print(f"\n🧠 Running regime detection on {years:.1f} years of data...")
-        print("⏰ This may take 2-3 minutes due to large dataset...")
+        print("This may take 2-3 minutes due to large dataset...")
         
         detector = AutoRegimeDetector(
             max_regimes=8,      # Allow up to 8 regimes for long history
@@ -212,7 +212,7 @@ def full_historical_analysis():
         return detector, data, visualizer
         
     except Exception as e:
-        print(f"❌ Error in historical analysis: {e}")
+        print(f"Error in historical analysis: {e}")
         return None, None, None
 # Make everything easily accessible
 __all__ = [
@@ -228,3 +228,4 @@ __all__ = [
 
 
 print("AutoRegime loaded! Try: quick_demo() or launch_dashboard()")
+
