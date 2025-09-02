@@ -125,10 +125,10 @@ class AutoRegimeDetector:
             raise ValueError("Need at least 100 observations for reliable regime detection")
         
         if data.isnull().sum().sum() > len(data) * 0.1:
-            logger.warning("⚠️ High percentage of missing values detected")
+            logger.warning("High percentage of missing values detected")
             
         if not isinstance(data.index, pd.DatetimeIndex):
-            logger.warning("⚠️ Index is not datetime - consider converting for better results")
+            logger.warning("Index is not datetime - consider converting for better results")
     
     def _prepare_features(self, returns_data: pd.DataFrame, 
                          feature_columns: Optional[List[str]] = None) -> np.ndarray:
@@ -449,13 +449,13 @@ class AutoRegimeDetector:
     def _print_regime_summary(self) -> None:
         """Print comprehensive regime analysis summary."""
         print("\n" + "="*60)
-        print("📊 AUTOREGIME ANALYSIS SUMMARY")
+        print("AUTOREGIME ANALYSIS SUMMARY")
         print("="*60)
         
         print(f"Optimal number of regimes: {self.optimal_n_regimes}")
         print(f"Model selection score: {self.model_selection_results[-1]['combined_score']:.3f}")
         
-        print("\n🎯 REGIME CHARACTERISTICS:")
+        print("\n REGIME CHARACTERISTICS:")
         print("-" * 60)
         
         for regime in range(self.optimal_n_regimes):
