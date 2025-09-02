@@ -94,7 +94,7 @@ class AutoRegimeDetector:
         self : AutoRegimeDetector
             Fitted detector instance
         """
-        logger.info("🚀 Starting AutoRegime detection...")
+        logger.info("Starting AutoRegime detection...")
         
         # Validate input data
         self._validate_input_data(returns_data)
