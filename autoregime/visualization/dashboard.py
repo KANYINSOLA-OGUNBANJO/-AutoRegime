@@ -84,7 +84,7 @@ class AutoRegimeDashboard:
     def run(self):
         """Run the interactive dashboard."""
         # Main header
-        st.markdown('<h1 class="main-header">🚀 AutoRegime Dashboard</h1>', 
+        st.markdown('<h1 class="main-header"> AutoRegime Dashboard</h1>', 
                    unsafe_allow_html=True)
         st.markdown("**Revolutionary AI-Powered Market Regime Detection**")
         
@@ -99,7 +99,7 @@ class AutoRegimeDashboard:
     
     def _create_sidebar(self):
         """Create the dashboard sidebar."""
-        st.sidebar.markdown("### 📊 Data Loading")
+        st.sidebar.markdown("### Data Loading")
         
         universe = st.sidebar.selectbox(
             "Select Asset Universe:",
@@ -120,7 +120,7 @@ class AutoRegimeDashboard:
         
         # Model parameters
         if st.session_state.get('data_loaded', False):
-            st.sidebar.markdown("### 🧠 Model Parameters")
+            st.sidebar.markdown("### Model Parameters")
             
             max_regimes = st.sidebar.slider(
                 "Max Regimes:", 2, 10, 
@@ -137,7 +137,7 @@ class AutoRegimeDashboard:
         
         # Export section
         if st.session_state.get('data_loaded', False):
-            st.sidebar.markdown("### 💾 Export")
+            st.sidebar.markdown("### Export")
             if st.sidebar.button("Export Analysis"):
                 self._export_analysis()
     
@@ -174,7 +174,7 @@ class AutoRegimeDashboard:
     
     def _load_and_analyze_data(self, universe, start_date):
         """Load data and run regime analysis."""
-        with st.spinner("🔄 Loading market data and detecting regimes..."):
+        with st.spinner("Loading market data and detecting regimes..."):
             try:
                 # Load data
                 data = self.loader.load_preset_universe(universe, start_date=start_date)
@@ -260,8 +260,8 @@ class AutoRegimeDashboard:
             
             st.markdown(f"""
             <div class="regime-alert {regime_class}">
-                🚨 CURRENT MARKET REGIME: {regime_name.upper()}<br/>
-                📊 Confidence: {confidence:.1%}
+                 CURRENT MARKET REGIME: {regime_name.upper()}<br/>
+                 Confidence: {confidence:.1%}
             </div>
             """, unsafe_allow_html=True)
             
@@ -282,7 +282,7 @@ class AutoRegimeDashboard:
     
     def _display_key_metrics(self, detector, data):
         """Display key metrics in a card layout."""
-        st.markdown("## 📊 Key Metrics")
+        st.markdown("## Key Metrics")
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -369,7 +369,7 @@ class AutoRegimeDashboard:
         st.dataframe(regime_df, use_container_width=True)
         
         # Detailed regime characteristics
-        st.markdown("### 📋 Detailed Characteristics")
+        st.markdown("### Detailed Characteristics")
         
         selected_regime = st.selectbox(
             "Select regime for detailed analysis:",
@@ -390,7 +390,7 @@ class AutoRegimeDashboard:
             
             with col1:
                 st.markdown(f"""
-                **📊 {selected_regime} Statistics:**
+                ** {selected_regime} Statistics:**
                 - **Frequency**: {char['frequency']:.1%}
                 - **Average Duration**: {char['avg_duration']:.1f} days
                 - **Annual Return**: {char['mean_return']:.1%}
@@ -399,7 +399,7 @@ class AutoRegimeDashboard:
             
             with col2:
                 st.markdown(f"""
-                **🎯 Risk Metrics:**
+                ** Risk Metrics:**
                 - **Sharpe Ratio**: {char['sharpe_ratio']:.2f}
                 - **Max Drawdown**: {char['max_drawdown']:.1%}
                 - **Return/Vol Ratio**: {char['mean_return']/char['volatility']:.2f}
@@ -410,7 +410,7 @@ class AutoRegimeDashboard:
         try:
             visualizer = st.session_state['visualizer']
             
-            with st.spinner("📊 Exporting analysis..."):
+            with st.spinner("Exporting analysis..."):
                 output_dir = visualizer.export_analysis('./streamlit_export')
                 
             st.success(f"Analysis exported to: {output_dir}")
