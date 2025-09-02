@@ -110,9 +110,9 @@ class RegimeVisualizer:
             shared_xaxes=True,
             vertical_spacing=0.05,
             subplot_titles=(
-                '🎯 Market Regime Timeline',
-                '📈 Cumulative Returns by Regime', 
-                '📊 Regime Confidence Levels'
+                'Market Regime Timeline',
+                'Cumulative Returns by Regime', 
+                'Regime Confidence Levels'
             ),
             row_heights=[0.4, 0.35, 0.25]
         )
@@ -220,7 +220,7 @@ class RegimeVisualizer:
                     c=color, label=regime_name, alpha=0.7, s=20
                 )
         
-        axes[0].set_title('🎯 Market Regime Timeline', fontsize=16, fontweight='bold')
+        axes[0].set_title('Market Regime Timeline', fontsize=16, fontweight='bold')
         axes[0].set_ylabel('Daily Returns')
         axes[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         axes[0].grid(True, alpha=0.3)
@@ -245,7 +245,7 @@ class RegimeVisualizer:
                     color=color, label=f'{regime_name}', alpha=0.7
                 )
         
-        axes[2].set_title('📊 Regime Confidence Levels', fontsize=14, fontweight='bold')
+        axes[2].set_title('Regime Confidence Levels', fontsize=14, fontweight='bold')
         axes[2].set_xlabel('Date')
         axes[2].set_ylabel('Probability')
         axes[2].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -261,7 +261,7 @@ class RegimeVisualizer:
         
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            print(f"📊 Timeline saved to: {save_path}")
+            print(f"Timeline saved to: {save_path}")
         
         return fig
     
@@ -301,10 +301,10 @@ class RegimeVisualizer:
         fig = make_subplots(
             rows=2, cols=2,
             subplot_titles=(
-                '📊 Risk-Return Profile',
-                '🎯 Sharpe Ratio Comparison', 
-                '⏱️ Regime Duration Analysis',  
-                '📈 Frequency Analysis'
+                'Risk-Return Profile',
+                'Sharpe Ratio Comparison', 
+                'Regime Duration Analysis',  
+                'Frequency Analysis'
             )
         )
         
@@ -368,7 +368,7 @@ class RegimeVisualizer:
         fig.update_layout(
             height=800,
             title={
-                'text': '📊 AutoRegime Performance Analytics',
+                'text': 'AutoRegime Performance Analytics',
                 'x': 0.5,
                 'font': {'size': 24}
             },
@@ -476,29 +476,29 @@ class RegimeVisualizer:
         # Export summary table
         summary_table = self.create_regime_summary_table()
         summary_table.to_csv(f"{output_dir}/regime_summary.csv", index=False)
-        print("✅ Regime summary table exported")
+        print("Regime summary table exported")
         
         # Export static plots
         timeline_fig = self.plot_regime_timeline(interactive=False)
         timeline_fig.savefig(f"{output_dir}/regime_timeline.png", dpi=300, bbox_inches='tight')
         plt.close(timeline_fig)
-        print("✅ Regime timeline exported")
+        print("Regime timeline exported")
         
         performance_fig = self._plot_static_performance()
         performance_fig.savefig(f"{output_dir}/regime_performance.png", dpi=300, bbox_inches='tight')
         plt.close(performance_fig)
-        print("✅ Performance analysis exported")
+        print("Performance analysis exported")
         
         transition_fig = self.plot_regime_transitions(interactive=False)
         transition_fig.savefig(f"{output_dir}/regime_transitions.png", dpi=300, bbox_inches='tight')
         plt.close(transition_fig)
-        print("✅ Transition matrix exported")
+        print("Transition matrix exported")
         
         # Export data
         self.regime_df.to_csv(f"{output_dir}/regime_data.csv", index=False)
-        print("✅ Regime data exported")
+        print("Regime data exported")
         
-        print("🎉 Analysis export completed!")
+        print("Analysis export completed!")
         return output_dir
 
     def _plot_static_performance(self):
@@ -537,12 +537,12 @@ class RegimeVisualizer:
         
         axes[0,0].set_xlabel('Annual Volatility')
         axes[0,0].set_ylabel('Annual Return')
-        axes[0,0].set_title('📊 Risk-Return Profile')
+        axes[0,0].set_title('Risk-Return Profile')
         axes[0,0].grid(True, alpha=0.3)
         
         # Sharpe ratio bar chart
         bars = axes[0,1].bar(perf_df['Regime'], perf_df['Sharpe'], color=colors, alpha=0.7)
-        axes[0,1].set_title('🎯 Sharpe Ratio Comparison')
+        axes[0,1].set_title('Sharpe Ratio Comparison')
         axes[0,1].set_ylabel('Sharpe Ratio')
         axes[0,1].tick_params(axis='x', rotation=45)
         axes[0,1].grid(True, alpha=0.3)
@@ -555,7 +555,7 @@ class RegimeVisualizer:
             autopct='%1.1f%%',
             startangle=90
         )
-        axes[1,0].set_title('📈 Regime Frequency')
+        axes[1,0].set_title('Regime Frequency')
         
         # Return distribution
         axes[1,1].bar(perf_df['Regime'], perf_df['Return'], color=colors, alpha=0.7)
