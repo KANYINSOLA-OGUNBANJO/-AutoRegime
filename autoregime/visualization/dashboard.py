@@ -147,7 +147,7 @@ class AutoRegimeDashboard:
         
         with col2:
             st.markdown("""
-            ## Welcome to AutoRegime! 🎯
+            ## Welcome to AutoRegime!
             
             **Revolutionary AI-powered market regime detection system**
             
@@ -196,11 +196,11 @@ class AutoRegimeDashboard:
                 st.session_state['universe'] = universe
                 st.session_state['start_date'] = start_date
                 
-                st.success("✅ Analysis completed successfully!")
+                st.success("Analysis completed successfully!")
                 st.rerun()
                 
             except Exception as e:
-                st.error(f"❌ Error loading data: {str(e)}")
+                st.error(f"Error loading data: {str(e)}")
     
     def _rerun_analysis(self, max_regimes, min_duration):
         """Rerun analysis with new parameters."""
@@ -224,11 +224,11 @@ class AutoRegimeDashboard:
                 st.session_state['max_regimes'] = max_regimes
                 st.session_state['min_duration'] = min_duration
                 
-                st.success("✅ Analysis updated!")
+                st.success("Analysis updated!")
                 st.rerun()
                 
             except Exception as e:
-                st.error(f"❌ Error rerunning analysis: {str(e)}")
+                st.error(f"Error rerunning analysis: {str(e)}")
     
     def _display_main_dashboard(self):
         """Display the main dashboard content."""
@@ -288,7 +288,7 @@ class AutoRegimeDashboard:
         
         with col1:
             st.metric(
-                "🎯 Optimal Regimes",
+                "Optimal Regimes",
                 detector.optimal_n_regimes,
                 help="Number of regimes discovered"
             )
@@ -330,7 +330,7 @@ class AutoRegimeDashboard:
         st.markdown("## 📈 Interactive Analysis")
         
         # Chart selection tabs
-        tab1, tab2, tab3 = st.tabs(["📊 Timeline", "🎯 Performance", "🔄 Transitions"])
+        tab1, tab2, tab3 = st.tabs(["Timeline", "Performance", "Transitions"])
         
         with tab1:
             st.markdown("### Market Regime Timeline")
@@ -413,18 +413,18 @@ class AutoRegimeDashboard:
             with st.spinner("📊 Exporting analysis..."):
                 output_dir = visualizer.export_analysis('./streamlit_export')
                 
-            st.success(f"✅ Analysis exported to: {output_dir}")
+            st.success(f"Analysis exported to: {output_dir}")
             
             # Provide download links
-            st.markdown("### 💾 Download Files:")
-            st.markdown("- 📊 regime_summary.csv")
-            st.markdown("- 📈 regime_timeline.png")
-            st.markdown("- 📊 regime_performance.png")
-            st.markdown("- 🔄 regime_transitions.png")
-            st.markdown("- 📋 regime_data.csv")
+            st.markdown("### Download Files:")
+            st.markdown("- regime_summary.csv")
+            st.markdown("- regime_timeline.png")
+            st.markdown("- regime_performance.png")
+            st.markdown("- regime_transitions.png")
+            st.markdown("- regime_data.csv")
             
         except Exception as e:
-            st.error(f"❌ Export error: {str(e)}")
+            st.error(f"Export error: {str(e)}")
 
 def main():
     """Run the AutoRegime dashboard."""
