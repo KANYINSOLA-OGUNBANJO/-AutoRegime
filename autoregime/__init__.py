@@ -1,5 +1,6 @@
 """
-AutoRegime: AI-Powered Market Regime Detection
+AutoRegime: Professional Market Regime Detection System
+For research and analysis purposes. Past performance does not guarantee future results.
 One-line installation and usage for instant market analysis
 """
 
@@ -228,5 +229,6 @@ __all__ = [
 
 
 print("AutoRegime loaded! Try: quick_demo() or launch_dashboard()")
+
 
 
