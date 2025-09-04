@@ -51,7 +51,7 @@ current_regime, confidence = detector.predict_current_regime(data.tail(21))
 print(f"Current: {detector.regime_names[current_regime]} ({confidence:.1%})")
 
 Multi-Asset Analysis
-Copy# Analyze multiple assets
+# Analyze multiple assets
 for symbol in ['SPY', 'QQQ', 'TSLA']:
     data = loader.load_market_data([symbol], start_date='2022-01-01')
     detector = autoregime.AutoRegimeDetector(verbose=False)
@@ -104,5 +104,6 @@ Contributions welcome! Please read CONTRIBUTING.md for guidelines.
 ## 📧 Contact
 
 Built by Kanyinsola Ogunbanjo - kanyinsolaogunbanjo@gmail.com
+
 
 
