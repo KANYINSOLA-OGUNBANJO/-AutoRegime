@@ -35,10 +35,29 @@ autoregime.quick_demo()
 # Launch interactive dashboard
 autoregime.launch_dashboard()
 
-# Advanced usage
+### Advanced Usage
+
+```python
+import autoregime
+
+# Create detector and analyze SPY
 detector = autoregime.AutoRegimeDetector()
-regimes = detector.detect_regimes('SPY', start_date='2020-01-01')
-detector.plot_regimes()
+loader = autoregime.MarketDataLoader()
+data = loader.load_market_data(['SPY'], start_date='2020-01-01')
+detector.fit(data)
+
+# Get current regime
+current_regime, confidence = detector.predict_current_regime(data.tail(21))
+print(f"Current: {detector.regime_names[current_regime]} ({confidence:.1%})")
+
+Multi-Asset Analysis
+Copy# Analyze multiple assets
+for symbol in ['SPY', 'QQQ', 'TSLA']:
+    data = loader.load_market_data([symbol], start_date='2022-01-01')
+    detector = autoregime.AutoRegimeDetector(verbose=False)
+    detector.fit(data)
+    regime, conf = detector.predict_current_regime(data.tail(21))
+    print(f"{symbol}: {detector.regime_names[regime]} ({conf:.1%})")
 ```
 
 ## 📊 What AutoRegime Detects
@@ -85,4 +104,5 @@ Contributions welcome! Please read CONTRIBUTING.md for guidelines.
 ## 📧 Contact
 
 Built by Kanyinsola Ogunbanjo - kanyinsolaogunbanjo@gmail.com
+
 
