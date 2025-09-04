@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+Copyfrom setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -8,20 +8,24 @@ setup(
     version="1.0.0",
     author="Kanyinsola Ogunbanjo",
     author_email="kanyinsolaogunbanjo@gmail.com",
-    description="AI-Powered Market Regime Detection System",
-    long_description=long_description,
+    description="Professional market regime detection system for research and analysis purposes",
+    long_description=long_description + "\n\n**Disclaimer:** This tool is for research and analysis purposes only. Past performance does not guarantee future results. Not financial advice.",
     long_description_content_type="text/markdown",
     url="https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Financial and Insurance Industry",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Education",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Topic :: Office/Business :: Financial",
+        "Topic :: Scientific/Engineering :: Information Analysis",
     ],
     python_requires=">=3.8",
     install_requires=[
@@ -35,5 +39,11 @@ setup(
         "yfinance>=0.1.87",
         "seaborn>=0.11.0",
     ],
-
+    keywords=[
+        "market regime detection",
+        "financial analysis", 
+        "hidden markov models",
+        "quantitative finance",
+        "research tools"
+    ],
 )
