@@ -3,11 +3,15 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**AutoRegime** is an advanced AI system that automatically detects and analyzes market regimes using Hidden Markov Models. Built with 25+ years of market data validation, it identifies bull markets, bear markets, sideways trends, and crisis periods with professional-grade accuracy.
+**AutoRegime** is an advanced AI system that automatically detects and analyzes market regimes using Hidden Markov Models.
+
+## ⚠️ Important Disclaimer
+
+**This tool is for research and analysis purposes only. Past performance does not guarantee future results. This is not financial advice. Consult qualified financial professionals for investment decisions.**
 
 ## ✨ Key Features
 
-- 🤖 **AI-Powered Detection**: Hidden Markov Models with 6 sophisticated market indicators
+- 🤖 **AI-Powered Detection**: Hidden Markov Models with sophisticated market indicators
 - 📊 **25+ Years of Data**: Validated performance from 1995 to present
 - 🎯 **Regime Classification**: Bull, Bear, Sideways, and Crisis detection
 - 📈 **Professional Visualizations**: Interactive charts and regime timelines
@@ -81,3 +85,4 @@ Contributions welcome! Please read CONTRIBUTING.md for guidelines.
 ## 📧 Contact
 
 Built by Kanyinsola Ogunbanjo - kanyinsolaogunbanjo@gmail.com
+
