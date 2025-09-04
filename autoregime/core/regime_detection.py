@@ -1,5 +1,6 @@
 """
-AutoRegime: Revolutionary Market Regime Detection
+AutoRegime: Professional Market Regime Detection System
+For research and analysis purposes. Past performance does not guarantee future results.
 Author: [Kanyinsola Ogunbanjo]
 """
 import numpy as np
@@ -18,21 +19,23 @@ logger = logging.getLogger(__name__)
 
 class AutoRegimeDetector:
     """
-    Revolutionary automated market regime detection system.
+    Professional automated market regime detection system.
+    
+    This tool provides historical market analysis for research purposes.
+    Past performance does not guarantee future results.
     
     Features:
     - Automatic optimal regime count discovery
-    - Real-time regime adaptation  
+    - Real-time regime pattern recognition
     - Multi-timeframe analysis
     - Economic significance testing
-    - Production-ready performance
+    - Professional market regime timeline
     
     Example:
     --------
     >>> detector = AutoRegimeDetector()
     >>> detector.fit(returns_data)
-    >>> current_regime, confidence = detector.predict_current_regime()
-    >>> print(f"Market regime: {detector.regime_names[current_regime]} ({confidence:.1%})")
+    >>> timeline = detector.get_regime_timeline(returns_data)
     """
     
     def __init__(self, 
@@ -115,6 +118,8 @@ class AutoRegimeDetector:
         
         if self.verbose:
             self._print_regime_summary()
+            # Show detailed timeline with exact dates
+            self.print_detailed_timeline(returns_data)
             
         logger.info("AutoRegime detection completed successfully!")
         return self
@@ -215,7 +220,7 @@ class AutoRegimeDetector:
         
         This is the core innovation that makes AutoRegime special.
         """
-        logger.info("🔍 Auto-discovering optimal regime count...")
+        logger.info("Auto-discovering optimal regime count...")
         
         best_model = None
         best_score = np.inf
@@ -472,6 +477,142 @@ class AutoRegimeDetector:
                 print(f"  Max Drawdown: {char['max_drawdown']:.1%}")
         
         print("\n" + "="*60)
+    
+    def get_regime_timeline(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Get detailed regime timeline with exact dates for professional analysis.
+        
+        Parameters:
+        -----------
+        data : pd.DataFrame
+            Market data used for fitting
+            
+        Returns:
+        --------
+        pd.DataFrame: Timeline with regime periods, dates, and characteristics
+        """
+        if self.optimal_model is None:
+            raise ValueError("Model not fitted. Call fit() first.")
+        
+        # Get regime predictions
+        features = self._prepare_features(data)
+        regimes = self.optimal_model.predict(features)
+        
+        regime_periods = []
+        
+        if len(regimes) == 0:
+            return pd.DataFrame()
+        
+        # Track regime changes
+        current_regime = regimes[0]
+        start_date = data.index[0]
+        start_idx = 0
+        
+        for i in range(1, len(regimes)):
+            if regimes[i] != current_regime:
+                # End of current regime period
+                end_date = data.index[i-1]
+                duration = i - start_idx
+                
+                # Get regime characteristics
+                regime_name = self.regime_names.get(current_regime, f'Regime {current_regime}')
+                regime_char = self.regime_characteristics.get(current_regime, {})
+                
+                period_info = {
+                    'Regime_ID': current_regime,
+                    'Regime_Name': regime_name,
+                    'Start_Date': start_date,
+                    'End_Date': end_date,
+                    'Duration_Days': duration,
+                    'Duration_Years': duration / 252,
+                    'Annual_Return_Pct': regime_char.get('mean_return', 0) * 100,
+                    'Annual_Volatility_Pct': regime_char.get('volatility', 0) * 100,
+                    'Sharpe_Ratio': regime_char.get('sharpe_ratio', 0),
+                    'Max_Drawdown_Pct': regime_char.get('max_drawdown', 0) * 100
+                }
+                regime_periods.append(period_info)
+                
+                # Start new regime period
+                current_regime = regimes[i]
+                start_date = data.index[i]
+                start_idx = i
+        
+        # Add the last period
+        end_date = data.index[-1]
+        duration = len(regimes) - start_idx
+        regime_name = self.regime_names.get(current_regime, f'Regime {current_regime}')
+        regime_char = self.regime_characteristics.get(current_regime, {})
+        
+        period_info = {
+            'Regime_ID': current_regime,
+            'Regime_Name': regime_name,
+            'Start_Date': start_date,
+            'End_Date': end_date,
+            'Duration_Days': duration,
+            'Duration_Years': duration / 252,
+            'Annual_Return_Pct': regime_char.get('mean_return', 0) * 100,
+            'Annual_Volatility_Pct': regime_char.get('volatility', 0) * 100,
+            'Sharpe_Ratio': regime_char.get('sharpe_ratio', 0),
+            'Max_Drawdown_Pct': regime_char.get('max_drawdown', 0) * 100
+        }
+        regime_periods.append(period_info)
+        
+        timeline_df = pd.DataFrame(regime_periods)
+        return timeline_df
+
+    def print_detailed_timeline(self, data: pd.DataFrame) -> None:
+        """Print detailed regime timeline with exact dates and market characteristics."""
+        timeline = self.get_regime_timeline(data)
+        
+        print("\nDETAILED REGIME TIMELINE")
+        print("="*80)
+        print("For research and analysis purposes only.")
+        print("="*80)
+        
+        for idx, period in timeline.iterrows():
+            print(f"\nPERIOD {idx + 1}: {period['Regime_Name']}")
+            print(f"   Duration: {period['Start_Date'].strftime('%Y-%m-%d')} to {period['End_Date'].strftime('%Y-%m-%d')}")
+            print(f"   Length: {period['Duration_Days']} trading days ({period['Duration_Years']:.1f} years)")
+            print(f"   Annual Return: {period['Annual_Return_Pct']:.1f}%")
+            print(f"   Annual Volatility: {period['Annual_Volatility_Pct']:.1f}%")
+            print(f"   Sharpe Ratio: {period['Sharpe_Ratio']:.2f}")
+            print(f"   Max Drawdown: {period['Max_Drawdown_Pct']:.1f}%")
+            
+            # Market regime characteristics
+            if period['Sharpe_Ratio'] > 1.0:
+                characteristics = "High risk-adjusted returns - favorable market conditions"
+            elif period['Sharpe_Ratio'] > 0.5:
+                characteristics = "Moderate risk-adjusted returns - balanced market conditions"
+            elif period['Sharpe_Ratio'] > 0:
+                characteristics = "Positive returns with elevated risk - mixed conditions"
+            else:
+                characteristics = "Challenging period - poor risk-adjusted performance"
+            
+            print(f"   Market Characteristics: {characteristics}")
+        
+        print("\n" + "="*80)
+        
+        # Export timeline automatically
+        timeline.to_csv('autoregime_timeline.csv', index=False)
+        print("Timeline exported to 'autoregime_timeline.csv'")
+        
+        # Current regime status
+        current_regime, confidence = self.predict_current_regime(data.tail(21))
+        current_name = self.regime_names.get(current_regime, f'Regime {current_regime}')
+        current_period = timeline.iloc[-1]
+        
+        print(f"\nCURRENT MARKET STATUS:")
+        print(f"   Active Regime: {current_name}")
+        print(f"   Confidence Level: {confidence:.1%}")
+        print(f"   Regime Started: {current_period['Start_Date'].strftime('%Y-%m-%d')}")
+        print(f"   Duration So Far: {current_period['Duration_Days']} days")
+        
+        # Regime stability analysis
+        avg_duration = timeline['Duration_Days'].mean()
+        if current_period['Duration_Days'] > avg_duration * 1.5:
+            print(f"   Analysis: Current regime duration exceeds historical average")
+        else:
+            print(f"   Analysis: Current regime duration within normal range")
     
     def predict_current_regime(self, recent_data: Optional[pd.DataFrame] = None, 
                               window: int = 21) -> Tuple[int, float]:
