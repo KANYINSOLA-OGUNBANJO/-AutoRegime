@@ -603,10 +603,8 @@ class AutoRegimeDetector:
             print(f"   Market Characteristics: {characteristics}")
         
         print("\n" + "="*80)
-        
-        # Export timeline automatically
-        timeline.to_csv('autoregime_timeline.csv', index=False)
-        print("Timeline exported to 'autoregime_timeline.csv'")
+        print("Timeline data available via: detector.get_regime_timeline()")
+        print("="*80)
         
         # Current regime status  
         data_to_use = data if data is not None else self._fitted_data
