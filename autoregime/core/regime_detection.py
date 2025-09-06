@@ -76,6 +76,9 @@ class AutoRegimeDetector:
         # Model selection results
         self.model_selection_results = []
         
+        # Store fitted data for timeline generation
+        self._fitted_data = None
+        
         # Online learning components
         self.online_learning_enabled = False
         self.adaptation_rate = 0.1
@@ -98,6 +101,9 @@ class AutoRegimeDetector:
             Fitted detector instance
         """
         logger.info("Starting AutoRegime detection...")
+        
+        # Store the fitted data
+        self._fitted_data = returns_data.copy()
         
         # Validate input data
         self._validate_input_data(returns_data)
@@ -478,14 +484,14 @@ class AutoRegimeDetector:
         
         print("\n" + "="*60)
     
-    def get_regime_timeline(self, data: pd.DataFrame) -> pd.DataFrame:
+    def get_regime_timeline(self, data: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """
         Get detailed regime timeline with exact dates for professional analysis.
         
         Parameters:
         -----------
-        data : pd.DataFrame
-            Market data used for fitting
+        data : pd.DataFrame, optional
+            Market data used for fitting. If None, uses stored fitted data.
             
         Returns:
         --------
@@ -493,6 +499,12 @@ class AutoRegimeDetector:
         """
         if self.optimal_model is None:
             raise ValueError("Model not fitted. Call fit() first.")
+        
+        # Use provided data or stored fitted data
+        if data is None:
+            if self._fitted_data is None:
+                raise ValueError("No data available. Either provide data parameter or call fit() first.")
+            data = self._fitted_data
         
         # Get regime predictions
         features = self._prepare_features(data)
@@ -560,7 +572,7 @@ class AutoRegimeDetector:
         timeline_df = pd.DataFrame(regime_periods)
         return timeline_df
 
-    def print_detailed_timeline(self, data: pd.DataFrame) -> None:
+    def print_detailed_timeline(self, data: Optional[pd.DataFrame] = None) -> None:
         """Print detailed regime timeline with exact dates and market characteristics."""
         timeline = self.get_regime_timeline(data)
         
@@ -596,8 +608,9 @@ class AutoRegimeDetector:
         timeline.to_csv('autoregime_timeline.csv', index=False)
         print("Timeline exported to 'autoregime_timeline.csv'")
         
-        # Current regime status
-        current_regime, confidence = self.predict_current_regime(data.tail(21))
+        # Current regime status  
+        data_to_use = data if data is not None else self._fitted_data
+        current_regime, confidence = self.predict_current_regime(data_to_use.tail(21))
         current_name = self.regime_names.get(current_regime, f'Regime {current_regime}')
         current_period = timeline.iloc[-1]
         
