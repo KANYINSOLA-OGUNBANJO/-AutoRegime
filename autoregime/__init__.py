@@ -6,6 +6,8 @@ One-line installation and usage for instant market analysis
 __version__ = "0.1.0"
 __author__ = "Your Name"
 
+import numpy as np 
+
 # Core imports for easy access
 from .core.regime_detection import AutoRegimeDetector
 from .utils.data_loader import MarketDataLoader
@@ -214,6 +216,12 @@ def full_historical_analysis():
     except Exception as e:
         print(f"❌ Error in historical analysis: {e}")
         return None, None, None
+
+def reliable_quick_analysis(symbol, seed=42):
+    """Reliable version of quick_analysis with consistent results"""
+    np.random.seed(seed)
+    return quick_analysis(symbol)
+
 # Make everything easily accessible
 __all__ = [
     'AutoRegimeDetector',
@@ -222,7 +230,8 @@ __all__ = [
     'quick_demo',
     'launch_dashboard',
     'quick_analysis',
-    'full_historical_analysis',  # Add this line
+    'reliable_quick_analysis',
+    'full_historical_analysis',
     'version'
 ]
 

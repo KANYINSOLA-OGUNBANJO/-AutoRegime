@@ -39,11 +39,11 @@ class AutoRegimeDetector:
     """
     
     def __init__(self, 
-                 max_regimes: int = 8,
-                 min_regime_duration: int = 5,
-                 economic_significance_threshold: float = 0.02,
-                 random_state: int = 42,
-                 verbose: bool = True):
+                 max_regimes=8,
+                 min_regime_duration=5,
+                 economic_threshold=0.02,
+                 verbose=False,
+                 random_state=None):
         """
         Initialize AutoRegime detector.
         
@@ -53,7 +53,7 @@ class AutoRegimeDetector:
             Maximum number of regimes to test
         min_regime_duration : int, default=5  
             Minimum days a regime must persist
-        economic_significance_threshold : float, default=0.02
+        economic_threshold : float, default=0.02
             Minimum return difference between regimes (2%)
         random_state : int, default=42
             Random seed for reproducibility
@@ -62,7 +62,7 @@ class AutoRegimeDetector:
         """
         self.max_regimes = max_regimes
         self.min_regime_duration = min_regime_duration
-        self.economic_threshold = economic_significance_threshold
+        self.economic_threshold = economic_threshold
         self.random_state = random_state
         self.verbose = verbose
         
