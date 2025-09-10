@@ -31,13 +31,16 @@ Problem Solved: Eliminated HMM non-deterministic behavior for production use.
 🌐 Interactive Dashboard: Real-time regime monitoring
 ⚡ 30+ Lines → 1 Line: Eliminates complex HMM setup
 🚀 Quick Start
+
 Installation
-Copypip install git+https://github.com/KANYINSOLA-OGUNBANJO/AutoRegime.git
+pip install git+https://github.com/KANYINSOLA-OGUNBANJO/AutoRegime.git
+
 Instant Analysis (2 Lines)
-Copyimport autoregime
+import autoregime
 autoregime.quick_analysis('SPY')  # Complete regime analysis instantly
+
 Basic Usage
-Copyimport autoregime
+import autoregime
 
 # Quick demo with real market data
 autoregime.quick_demo()
@@ -47,18 +50,21 @@ autoregime.launch_dashboard()
 
 # Reliable analysis (always same result)
 result = autoregime.reliable_quick_analysis('SPY')
+
 📊 Demo Codes
 Demo 1: Basic Detection
-Copyfrom reliable_regime import reliable_regime_analysis
+from reliable_regime import reliable_regime_analysis
 result = reliable_regime_analysis('SPY')
 print(f"SPY Regime: {result} (Always consistent)")
+
 Demo 2: Multi-Asset Analysis
-Copyfrom reliable_regime import reliable_multi_asset
+from reliable_regime import reliable_multi_asset
 results = reliable_multi_asset(['SPY', 'QQQ', 'TLT'])
 for symbol, result in results.items():
     print(f"{symbol}: {result}")
+
 Demo 3: Production Usage
-Copyfrom autoregime import AutoRegimeDetector, MarketDataLoader
+from autoregime import AutoRegimeDetector, MarketDataLoader
 import numpy as np
 
 detector = AutoRegimeDetector(random_state=42)  # Guaranteed consistency
@@ -67,12 +73,14 @@ data = loader.load_market_data(['AAPL'], start_date='2020-01-01')
 detector.fit(data)
 regime = detector.predict_current_regime(data)
 print(f"AAPL: {regime}")
+
 🎯 What AutoRegime Detects
 🚀 Bull Market: High momentum with controlled volatility
 📉 Bear Market: Sustained downward pressure and defensive positioning
 🎯 Goldilocks: Ideal conditions - moderate growth with low volatility
 📊 Sideways: Range-bound markets requiring balanced strategies
 ⚠️ Crisis: Extreme volatility requiring immediate risk management
+
 🏆 AutoRegime vs Competitors
 Feature	AutoRegime	hmmlearn	Academic Tools
 API Complexity	1 line	30+ lines	50+ lines
@@ -109,6 +117,7 @@ CURRENT MARKET STATUS:
    Confidence Level: 100.0%
    Expected Return: 38.9% annually
    Strategy: INCREASE EQUITY ALLOCATION
+
 🛠 Requirements
 Python 3.8+
 pandas >= 1.3.0
@@ -140,23 +149,24 @@ Please read CONTRIBUTING.md for guidelines.
 
 🌟 Why AutoRegime?
 The Problem: Existing regime detection requires:
-
 30+ lines of complex HMM setup
 Manual parameter tuning
 Deep ML expertise
 Produces cryptic, unreliable results
-AutoRegime Solution:
 
+AutoRegime Solution:
 ✅ One-line API: autoregime.quick_analysis('SPY')
 ✅ Human-readable regimes: "Bull Market" not "State 2"
 ✅ Auto-optimization: No manual tuning needed
 ✅ Production reliability: Consistent results every time
 ✅ Rich insights: Sharpe ratios, confidence scores, recommendations
+
 📊 Business Applications
 Portfolio Management: Dynamic allocation based on regime
 Risk Management: Early warning system for regime changes
 Systematic Trading: Regime-aware strategy adjustments
 Research: Academic and institutional market analysis
+
 📝 License
 MIT License - see LICENSE file for details.
 
