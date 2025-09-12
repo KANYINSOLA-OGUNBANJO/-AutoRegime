@@ -2,7 +2,7 @@
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**AutoRegime** is the world's first **one-line market regime detection library** that automatically identifies Bull, Bear, Crisis, and Goldilocks market conditions using optimized Hidden Markov Models.
+**AutoRegime** is the first **one-line market regime detection library** that automatically identifies Bull, Bear, Crisis, and Goldilocks market conditions using optimized Hidden Markov Models.
 
 ## ⚠️ Important Disclaimer
 
@@ -31,6 +31,7 @@ Problem Solved: Eliminated HMM non-deterministic behavior for production use.
 ⚡ 30+ Lines → 1 Line: Eliminates complex HMM setup
 🚀 Quick Start
 Installation
+
 pip install git+https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime.git
 Instant Analysis (2 Lines)
 import autoregime
@@ -257,3 +258,4 @@ Built by Kanyinsola Ogunbanjo - Quantitative Finance Professional
 🍴 Fork it to contribute your own regime detection improvements!
 
 📈 Try it now: pip install git+https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime.git
+
