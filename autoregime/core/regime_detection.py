@@ -30,41 +30,58 @@ class AutoRegimeDetector:
     - Multi-timeframe analysis
     - Economic significance testing
     - Professional market regime timeline
+    - Enhanced stability parameters
     
     Example:
     --------
     >>> detector = AutoRegimeDetector()
     >>> detector.fit(returns_data)
     >>> timeline = detector.get_regime_timeline(returns_data)
+    
+    >>> # Stable analysis mode
+    >>> detector = AutoRegimeDetector(stability_mode=True)
+    >>> detector.fit(returns_data)  # More stable, longer-duration regimes
     """
     
     def __init__(self, 
-                 max_regimes: int = 8,
-                 min_regime_duration: int = 5,
-                 economic_significance_threshold: float = 0.02,
+                 max_regimes: int = 6,           # Reduced from 8
+                 min_regime_duration: int = 20,  # Increased from 5
+                 economic_significance_threshold: float = 0.03,  # Increased from 0.02
                  random_state: int = 42,
+                 stability_mode: bool = False,   # NEW: Add stability mode
                  verbose: bool = True):
         """
         Initialize AutoRegime detector.
         
         Parameters:
         -----------
-        max_regimes : int, default=8
-            Maximum number of regimes to test
-        min_regime_duration : int, default=5  
-            Minimum days a regime must persist
-        economic_significance_threshold : float, default=0.02
-            Minimum return difference between regimes (2%)
+        max_regimes : int, default=6
+            Maximum number of regimes to test (reduced for stability)
+        min_regime_duration : int, default=20  
+            Minimum days a regime must persist (increased for stability)
+        economic_significance_threshold : float, default=0.03
+            Minimum return difference between regimes (3%, increased for stability)
         random_state : int, default=42
             Random seed for reproducibility
+        stability_mode : bool, default=False
+            Enable enhanced stability parameters for more robust regime detection
         verbose : bool, default=True
             Print progress information
         """
-        self.max_regimes = max_regimes
-        self.min_regime_duration = min_regime_duration
-        self.economic_threshold = economic_significance_threshold
+        # Apply stability settings if enabled
+        if stability_mode:
+            self.max_regimes = min(max_regimes, 4)  # Cap at 4 regimes
+            self.min_regime_duration = max(min_regime_duration, 30)  # Min 30 days
+            self.economic_threshold = max(economic_significance_threshold, 0.05)  # 5% threshold
+            print("🔧 Stability Mode Active: Enhanced parameters for robust regime detection")
+        else:
+            self.max_regimes = max_regimes
+            self.min_regime_duration = min_regime_duration
+            self.economic_threshold = economic_significance_threshold
+            
         self.random_state = random_state
         self.verbose = verbose
+        self.stability_mode = stability_mode
         
         # Model storage
         self.optimal_model = None
@@ -101,6 +118,9 @@ class AutoRegimeDetector:
             Fitted detector instance
         """
         logger.info("Starting AutoRegime detection...")
+        
+        if self.stability_mode and self.verbose:
+            print(f"🔧 Stability parameters: max_regimes={self.max_regimes}, min_duration={self.min_regime_duration}, threshold={self.economic_threshold:.1%}")
         
         # Store the fitted data
         self._fitted_data = returns_data.copy()
@@ -160,8 +180,9 @@ class AutoRegimeDetector:
             market_return = returns_data.mean(axis=1)
             feature_list.append(market_return.values.reshape(-1, 1))
             
-            # 2. Market volatility (rolling 21-day)
-            market_volatility = returns_data.rolling(21, min_periods=5).std().mean(axis=1)
+            # 2. Market volatility (rolling window - longer for stability mode)
+            vol_window = 30 if self.stability_mode else 21
+            market_volatility = returns_data.rolling(vol_window, min_periods=5).std().mean(axis=1)
             market_volatility = market_volatility.fillna(method='bfill').fillna(method='ffill')
             feature_list.append(market_volatility.values.reshape(-1, 1))
             
@@ -169,13 +190,15 @@ class AutoRegimeDetector:
             cross_sectional_vol = returns_data.std(axis=1)
             feature_list.append(cross_sectional_vol.values.reshape(-1, 1))
             
-            # 4. Momentum (12-month rolling mean)
-            momentum = returns_data.rolling(252, min_periods=21).mean().mean(axis=1)
+            # 4. Momentum (longer window for stability mode)
+            momentum_window = 300 if self.stability_mode else 252
+            momentum = returns_data.rolling(momentum_window, min_periods=21).mean().mean(axis=1)
             momentum = momentum.fillna(method='bfill').fillna(method='ffill')
             feature_list.append(momentum.values.reshape(-1, 1))
             
-            # 5. Skewness (21-day rolling)
-            skewness = returns_data.rolling(21, min_periods=5).skew().mean(axis=1)
+            # 5. Skewness (rolling window)
+            skew_window = 30 if self.stability_mode else 21
+            skewness = returns_data.rolling(skew_window, min_periods=5).skew().mean(axis=1)
             skewness = skewness.fillna(0)
             feature_list.append(skewness.values.reshape(-1, 1))
             
@@ -195,11 +218,14 @@ class AutoRegimeDetector:
         return features
     
     def _calculate_correlation_regime(self, returns_data: pd.DataFrame, 
-                                    window: int = 63) -> np.ndarray:
+                                    window: int = None) -> np.ndarray:
         """
         Calculate correlation regime indicator.
         High correlations often indicate crisis/risk-off regimes.
         """
+        if window is None:
+            window = 90 if self.stability_mode else 63
+            
         correlation_values = []
         
         for i in range(len(returns_data)):
@@ -267,11 +293,15 @@ class AutoRegimeDetector:
     
     def _fit_hmm_model(self, features: np.ndarray, n_regimes: int) -> hmm.GaussianHMM:
         """Fit Hidden Markov Model with specified number of regimes."""
+        # Enhanced parameters for stability mode
+        n_iter = 1500 if self.stability_mode else 1000
+        tol = 1e-7 if self.stability_mode else 1e-6
+        
         model = hmm.GaussianHMM(
             n_components=n_regimes,
             covariance_type="full",
-            n_iter=1000,
-            tol=1e-6,
+            n_iter=n_iter,
+            tol=tol,
             random_state=self.random_state
         )
         
@@ -307,12 +337,21 @@ class AutoRegimeDetector:
         # Regime persistence (penalize too-frequent switching)
         regime_persistence = self._calculate_regime_persistence(regime_states)
         
-        # Combined score (lower is better)
-        combined_score = (
-            0.4 * bic +  # Statistical fit (40%)
-            0.3 * (1 - economic_significance) +  # Economic significance (30%)
-            0.3 * (1 - regime_persistence)  # Regime persistence (30%)
-        )
+        # Adjusted weights for stability mode
+        if self.stability_mode:
+            # Emphasize persistence more in stability mode
+            combined_score = (
+                0.3 * bic +  # Statistical fit (30%)
+                0.2 * (1 - economic_significance) +  # Economic significance (20%)
+                0.5 * (1 - regime_persistence)  # Regime persistence (50%)
+            )
+        else:
+            # Standard weights
+            combined_score = (
+                0.4 * bic +  # Statistical fit (40%)
+                0.3 * (1 - economic_significance) +  # Economic significance (30%)
+                0.3 * (1 - regime_persistence)  # Regime persistence (30%)
+            )
         
         return {
             'aic': aic,
@@ -461,6 +500,8 @@ class AutoRegimeDetector:
         """Print comprehensive regime analysis summary."""
         print("\n" + "="*60)
         print("AUTOREGIME ANALYSIS SUMMARY")
+        if self.stability_mode:
+            print("🔧 STABILITY MODE ACTIVE")
         print("="*60)
         
         print(f"Optimal number of regimes: {self.optimal_n_regimes}")
@@ -579,6 +620,8 @@ class AutoRegimeDetector:
         print("\nDETAILED REGIME TIMELINE")
         print("="*80)
         print("For research and analysis purposes only.")
+        if self.stability_mode:
+            print("🔧 Enhanced stability parameters active")
         print("="*80)
         
         for idx, period in timeline.iterrows():
@@ -680,5 +723,44 @@ class AutoRegimeDetector:
             'optimal_n_regimes': self.optimal_n_regimes,
             'regime_names': self.regime_names,
             'regime_characteristics': self.regime_characteristics,
-            'model_selection_results': self.model_selection_results
+            'model_selection_results': self.model_selection_results,
+            'stability_mode': self.stability_mode
         }
+
+    # NEW: Convenience methods for different analysis modes
+    @classmethod
+    def create_stable_detector(cls, random_state: int = 42, **kwargs) -> 'AutoRegimeDetector':
+        """
+        Create a detector optimized for stable, long-duration regime detection.
+        
+        Returns:
+        --------
+        AutoRegimeDetector with stability_mode=True and optimized parameters
+        """
+        return cls(
+            stability_mode=True,
+            max_regimes=4,
+            min_regime_duration=30,
+            economic_significance_threshold=0.05,
+            random_state=random_state,
+            **kwargs
+        )
+    
+    @classmethod
+    def create_production_detector(cls, random_state: int = 42, **kwargs) -> 'AutoRegimeDetector':
+        """
+        Create a detector optimized for production use with maximum stability.
+        
+        Returns:
+        --------
+        AutoRegimeDetector with enhanced stability parameters
+        """
+        return cls(
+            stability_mode=True,
+            max_regimes=3,
+            min_regime_duration=45,
+            economic_significance_threshold=0.08,
+            random_state=random_state,
+            verbose=False,
+            **kwargs
+        )
