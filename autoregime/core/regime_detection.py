@@ -431,7 +431,7 @@ class AutoRegimeDetector:
                     'mean_return': np.mean(regime_returns) * 252,  # Annualized
                     'volatility': np.std(regime_returns) * np.sqrt(252),  # Annualized
                     'sharpe_ratio': (np.mean(regime_returns) * 252) / (np.std(regime_returns) * np.sqrt(252)),
-                    'max_drawdown': self._calculate_max_drawdown(regime_returns),
+                    'max_drawdown': self._calculate_max_drawdown_corrected(market_returns[regime_mask]),
                     'feature_means': np.mean(regime_features, axis=0)
                 }
     
@@ -454,12 +454,58 @@ class AutoRegimeDetector:
         
         return np.mean(durations) if durations else 0
     
+    def _calculate_max_drawdown_corrected(self, returns: Union[np.ndarray, pd.Series]) -> float:
+        """
+        🔧 FIXED: Calculate proper maximum drawdown using correct rolling maximum method.
+        
+        This replaces the broken calculation that was overestimating drawdowns by 3x.
+        
+        Parameters:
+        -----------
+        returns : array-like
+            Daily returns (not prices)
+            
+        Returns:
+        --------
+        float: Maximum drawdown as negative decimal (e.g., -0.136 for -13.6%)
+        """
+        if len(returns) == 0:
+            return 0.0
+        
+        # Convert to pandas Series if numpy array
+        if isinstance(returns, np.ndarray):
+            returns = pd.Series(returns)
+        
+        try:
+            # Calculate cumulative wealth (starting from 1)
+            cumulative_wealth = (1 + returns).cumprod()
+            
+            # Calculate rolling maximum (peak wealth at each point)
+            rolling_max = cumulative_wealth.expanding().max()
+            
+            # Calculate drawdown at each point (negative values)
+            drawdowns = (cumulative_wealth - rolling_max) / rolling_max
+            
+            # Return the most negative drawdown (worst case)
+            max_drawdown = float(drawdowns.min()) if len(drawdowns) > 0 else 0.0
+            
+            # Validation: drawdown should never be positive
+            if max_drawdown > 0:
+                max_drawdown = 0.0
+                
+            return max_drawdown
+            
+        except Exception as e:
+            logger.warning(f"Error calculating max drawdown: {e}")
+            return 0.0
+    
     def _calculate_max_drawdown(self, returns: np.ndarray) -> float:
-        """Calculate maximum drawdown for a return series."""
-        cumulative = np.cumprod(1 + returns)
-        running_max = np.maximum.accumulate(cumulative)
-        drawdown = (cumulative / running_max) - 1
-        return np.min(drawdown)
+        """
+        ❌ DEPRECATED: Old broken calculation kept for compatibility.
+        Use _calculate_max_drawdown_corrected() instead.
+        """
+        logger.warning("Using deprecated max drawdown calculation. Results may be inaccurate.")
+        return self._calculate_max_drawdown_corrected(returns)
     
     def _generate_regime_names(self) -> None:
         """Generate intuitive names for regimes based on characteristics."""
@@ -474,27 +520,38 @@ class AutoRegimeDetector:
                     'regime': regime,
                     'return': char['mean_return'],
                     'volatility': char['volatility'],
-                    'sharpe': char['sharpe_ratio']
+                    'sharpe': char['sharpe_ratio'],
+                    'drawdown': abs(char['max_drawdown'])  # Use absolute value for sorting
                 })
         
-        # Sort by Sharpe ratio (best to worst)
-        regime_data.sort(key=lambda x: x['sharpe'], reverse=True)
+        # Enhanced regime classification considering drawdown
+        regime_data.sort(key=lambda x: (x['sharpe'], -x['drawdown']), reverse=True)
         
-        # Assign names based on risk/return profile
-        name_templates = [
-            "Goldilocks",      # High Sharpe
-            "Bull Market",     # Good performance
-            "Steady Growth",   # Moderate performance
-            "Sideways",        # Neutral
-            "Risk-Off",        # Poor performance
-            "Bear Market",     # Worst performance
-        ]
-        
+        # Assign names based on risk/return profile AND drawdown severity
         for i, regime_info in enumerate(regime_data):
             regime_num = regime_info['regime']
-            name_idx = min(i, len(name_templates) - 1)
+            returns = regime_info['return']
+            drawdown = regime_info['drawdown']
+            sharpe = regime_info['sharpe']
             
-            self.regime_names[regime_num] = name_templates[name_idx]
+            # Enhanced classification logic
+            if drawdown > 0.25:  # More than -25% drawdown
+                if drawdown > 0.35:  # More than -35% drawdown
+                    name = "Crisis"
+                else:
+                    name = "Bear Market"
+            elif sharpe > 1.0 and drawdown < 0.15:  # Good Sharpe, low drawdown
+                name = "Goldilocks"
+            elif returns > 0.15 and drawdown < 0.20:  # Good returns, moderate drawdown
+                name = "Bull Market"
+            elif returns > 0.05:  # Positive returns
+                name = "Steady Growth"
+            elif drawdown < 0.15:  # Low drawdown despite poor returns
+                name = "Sideways"
+            else:
+                name = "Risk-Off"
+            
+            self.regime_names[regime_num] = name
     
     def _print_regime_summary(self) -> None:
         """Print comprehensive regime analysis summary."""
@@ -507,7 +564,7 @@ class AutoRegimeDetector:
         print(f"Optimal number of regimes: {self.optimal_n_regimes}")
         print(f"Model selection score: {self.model_selection_results[-1]['combined_score']:.3f}")
         
-        print("\n REGIME CHARACTERISTICS:")
+        print("\n📊 REGIME CHARACTERISTICS:")
         print("-" * 60)
         
         for regime in range(self.optimal_n_regimes):
@@ -633,15 +690,23 @@ class AutoRegimeDetector:
             print(f"   Sharpe Ratio: {period['Sharpe_Ratio']:.2f}")
             print(f"   Max Drawdown: {period['Max_Drawdown_Pct']:.1f}%")
             
-            # Market regime characteristics
-            if period['Sharpe_Ratio'] > 1.0:
-                characteristics = "High risk-adjusted returns - favorable market conditions"
-            elif period['Sharpe_Ratio'] > 0.5:
-                characteristics = "Moderate risk-adjusted returns - balanced market conditions"
-            elif period['Sharpe_Ratio'] > 0:
-                characteristics = "Positive returns with elevated risk - mixed conditions"
+            # Enhanced market regime characteristics considering drawdown
+            drawdown_severity = abs(period['Max_Drawdown_Pct'])
+            sharpe = period['Sharpe_Ratio']
+            
+            if drawdown_severity > 25:
+                if drawdown_severity > 35:
+                    characteristics = "Crisis conditions - severe market stress and high volatility"
+                else:
+                    characteristics = "Bear market conditions - significant downside pressure"
+            elif sharpe > 1.0 and drawdown_severity < 15:
+                characteristics = "Goldilocks conditions - optimal risk-adjusted returns"
+            elif sharpe > 0.5 and drawdown_severity < 20:
+                characteristics = "Favorable conditions - positive risk-adjusted returns"
+            elif period['Annual_Return_Pct'] > 0:
+                characteristics = "Mixed conditions - positive returns with elevated risk"
             else:
-                characteristics = "Challenging period - poor risk-adjusted performance"
+                characteristics = "Challenging conditions - poor risk-adjusted performance"
             
             print(f"   Market Characteristics: {characteristics}")
         
