@@ -486,12 +486,22 @@ class AutoRegimeDetector:
                 regime_returns = market_returns[regime_mask]
                 regime_features = features[regime_mask]
                 
+                # 🔧 FIXED: Safe Sharpe ratio calculation
+                mean_return = np.mean(regime_returns) * 252  # Annualized
+                volatility = np.std(regime_returns) * np.sqrt(252)  # Annualized
+                
+                # CRITICAL FIX: Safe division avoiding pandas Series boolean evaluation
+                if len(regime_returns) > 1 and volatility > 1e-10:
+                    sharpe_ratio = mean_return / volatility
+                else:
+                    sharpe_ratio = 0.0
+                
                 self.regime_characteristics[regime] = {
                     'frequency': np.sum(regime_mask) / len(regime_states),
                     'avg_duration': self._calculate_avg_duration(regime_states, regime),
-                    'mean_return': np.mean(regime_returns) * 252,  # Annualized
-                    'volatility': np.std(regime_returns) * np.sqrt(252),  # Annualized
-                    'sharpe_ratio': (np.mean(regime_returns) * 252) / (np.std(regime_returns) * np.sqrt(252)),
+                    'mean_return': mean_return,
+                    'volatility': volatility,
+                    'sharpe_ratio': sharpe_ratio,  # FIXED: Now uses safe calculation
                     'max_drawdown': self._calculate_max_drawdown_corrected(market_returns[regime_mask]),
                     'feature_means': np.mean(regime_features, axis=0)
                 }
