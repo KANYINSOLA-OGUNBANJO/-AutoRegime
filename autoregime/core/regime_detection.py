@@ -508,10 +508,15 @@ class AutoRegimeDetector:
         return self._calculate_max_drawdown_corrected(returns)
     
     def _generate_regime_names(self) -> None:
-        """Generate intuitive names for regimes based on characteristics."""
+        """
+        🔧 COMPLETELY FIXED: Generate intuitive names for regimes based on RETURN PERFORMANCE FIRST.
+        
+        This was the core bug - the old logic was backwards, using drawdown to classify regimes
+        instead of focusing on the primary characteristic: RETURNS.
+        """
         self.regime_names = {}
         
-        # Sort regimes by return/risk characteristics
+        # Sort regimes by return performance (PRIMARY FACTOR)
         regime_data = []
         for regime in range(self.optimal_n_regimes):
             if regime in self.regime_characteristics:
@@ -521,35 +526,51 @@ class AutoRegimeDetector:
                     'return': char['mean_return'],
                     'volatility': char['volatility'],
                     'sharpe': char['sharpe_ratio'],
-                    'drawdown': abs(char['max_drawdown'])  # Use absolute value for sorting
+                    'drawdown': abs(char['max_drawdown']),
+                    'frequency': char['frequency']
                 })
         
-        # Enhanced regime classification considering drawdown
-        regime_data.sort(key=lambda x: (x['sharpe'], -x['drawdown']), reverse=True)
+        # 🔧 FIXED: Sort by RETURNS FIRST (not Sharpe ratio which can be misleading)
+        regime_data.sort(key=lambda x: x['return'], reverse=True)
         
-        # Assign names based on risk/return profile AND drawdown severity
+        # 🔧 FIXED: Classification based on RETURNS with logical secondary factors
         for i, regime_info in enumerate(regime_data):
             regime_num = regime_info['regime']
             returns = regime_info['return']
-            drawdown = regime_info['drawdown']
+            volatility = regime_info['volatility']
             sharpe = regime_info['sharpe']
+            drawdown = regime_info['drawdown']
             
-            # Enhanced classification logic
-            if drawdown > 0.25:  # More than -25% drawdown
-                if drawdown > 0.35:  # More than -35% drawdown
-                    name = "Crisis"
-                else:
-                    name = "Bear Market"
-            elif sharpe > 1.0 and drawdown < 0.15:  # Good Sharpe, low drawdown
-                name = "Goldilocks"
-            elif returns > 0.15 and drawdown < 0.20:  # Good returns, moderate drawdown
-                name = "Bull Market"
-            elif returns > 0.05:  # Positive returns
-                name = "Steady Growth"
-            elif drawdown < 0.15:  # Low drawdown despite poor returns
+            # 🔧 COMPLETELY REWRITTEN LOGIC: Returns-first classification
+            if returns > 0.30:  # Exceptional performance (>30% annual)
+                if sharpe > 2.0:  # High returns + great risk-adjusted performance
+                    name = "Goldilocks"
+                else:  # High returns but higher volatility
+                    name = "Bull Market"
+                    
+            elif returns > 0.15:  # Strong performance (15-30% annual)
+                if volatility < 0.25:  # Good returns + reasonable volatility
+                    name = "Steady Growth"
+                else:  # Good returns but high volatility
+                    name = "Bull Market"
+                    
+            elif returns > 0.05:  # Moderate performance (5-15% annual)
+                if sharpe > 0.5:  # Decent risk-adjusted returns
+                    name = "Steady Growth"
+                else:  # Moderate returns, poor risk-adjusted
+                    name = "Sideways"
+                    
+            elif returns > -0.05:  # Near-zero performance (-5% to +5%)
                 name = "Sideways"
-            else:
+                
+            elif returns > -0.20:  # Moderate losses (-20% to -5%)
                 name = "Risk-Off"
+                
+            else:  # Severe losses (< -20%)
+                if drawdown > 0.30:  # Severe losses + high drawdown
+                    name = "Crisis"
+                else:  # Severe losses but contained drawdown
+                    name = "Bear Market"
             
             self.regime_names[regime_num] = name
     
@@ -690,23 +711,25 @@ class AutoRegimeDetector:
             print(f"   Sharpe Ratio: {period['Sharpe_Ratio']:.2f}")
             print(f"   Max Drawdown: {period['Max_Drawdown_Pct']:.1f}%")
             
-            # Enhanced market regime characteristics considering drawdown
-            drawdown_severity = abs(period['Max_Drawdown_Pct'])
+            # 🔧 FIXED: Market characteristics based on RETURNS FIRST
+            annual_return = period['Annual_Return_Pct']
             sharpe = period['Sharpe_Ratio']
             
-            if drawdown_severity > 25:
-                if drawdown_severity > 35:
-                    characteristics = "Crisis conditions - severe market stress and high volatility"
+            if annual_return > 30:
+                if sharpe > 2.0:
+                    characteristics = "Goldilocks conditions - exceptional returns with excellent risk management"
                 else:
-                    characteristics = "Bear market conditions - significant downside pressure"
-            elif sharpe > 1.0 and drawdown_severity < 15:
-                characteristics = "Goldilocks conditions - optimal risk-adjusted returns"
-            elif sharpe > 0.5 and drawdown_severity < 20:
-                characteristics = "Favorable conditions - positive risk-adjusted returns"
-            elif period['Annual_Return_Pct'] > 0:
-                characteristics = "Mixed conditions - positive returns with elevated risk"
+                    characteristics = "Bull market conditions - exceptional growth with elevated volatility"
+            elif annual_return > 15:
+                characteristics = "Strong growth conditions - solid performance with good fundamentals"
+            elif annual_return > 5:
+                characteristics = "Steady growth conditions - moderate positive performance"
+            elif annual_return > -5:
+                characteristics = "Sideways conditions - range-bound market with mixed signals"
+            elif annual_return > -20:
+                characteristics = "Risk-off conditions - defensive positioning and caution"
             else:
-                characteristics = "Challenging conditions - poor risk-adjusted performance"
+                characteristics = "Crisis conditions - severe market stress requiring immediate attention"
             
             print(f"   Market Characteristics: {characteristics}")
         
@@ -791,6 +814,13 @@ class AutoRegimeDetector:
             'model_selection_results': self.model_selection_results,
             'stability_mode': self.stability_mode
         }
+
+    def get_performance_metrics(self) -> Dict:
+        """Get performance metrics for the model."""
+        if self.optimal_model is None:
+            raise ValueError("Model not fitted. Call fit() first.")
+        
+        return self.regime_characteristics
 
     # NEW: Convenience methods for different analysis modes
     @classmethod
