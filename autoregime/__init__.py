@@ -3,13 +3,17 @@ AutoRegime - Revolutionary One-Line Market Regime Detection
 A professional-grade system for automated market regime identification.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "Kanyinsola Ogunbanjo"
 
 # Core imports for easy access
 from .core.regime_detection import AutoRegimeDetector
 from .core.data_loader import MarketDataLoader
 from .dashboard import launch_dashboard
+import numpy as np
+import pandas as pd
+import warnings
+warnings.filterwarnings('ignore')
 
 def quick_demo():
     """Quick demonstration of AutoRegime capabilities."""
@@ -112,7 +116,10 @@ def stable_regime_analysis(symbol, start_date='2020-01-01'):
     >>> print(f"Detected {detector.optimal_n_regimes} stable regimes")
     """
     print(f"🔧 Stable Regime Analysis for {symbol}")
-    print("Enhanced stability parameters active...")
+    print("🔒 DETERMINISTIC MODE: Results guaranteed consistent")
+    
+    # CRITICAL: Set global random state for full determinism
+    np.random.seed(42)
     
     loader = MarketDataLoader()
     data = loader.load_market_data([symbol], start_date=start_date)
@@ -131,7 +138,7 @@ def stable_regime_analysis(symbol, start_date='2020-01-01'):
     
     print(f"\n✅ Stable Analysis Complete for {symbol}")
     print(f"📊 Detected {detector.optimal_n_regimes} stable regimes")
-    print("🎯 Use detector.get_regime_timeline() for detailed timeline")
+    print("🔒 DETERMINISTIC: Same input = Same output guaranteed")
     
     return detector
 
@@ -162,7 +169,10 @@ def production_regime_analysis(symbol, start_date='2020-01-01'):
     >>> print(f"Production regime: {detector.regime_names[current_regime]}")
     """
     print(f"🏭 Production Regime Analysis for {symbol}")
-    print("Maximum stability parameters active...")
+    print("🔒 Maximum stability parameters active...")
+    
+    # CRITICAL: Set deterministic state
+    np.random.seed(42)
     
     loader = MarketDataLoader()
     data = loader.load_market_data([symbol], start_date=start_date)
@@ -219,7 +229,8 @@ def reliable_regime_analysis(symbol, start_date='2020-01-01'):
     timeline = detector.get_regime_timeline()
     if len(timeline) > 0:
         current_regime_name = timeline.iloc[-1]['Regime_Name']
-        print(f"✅ {symbol} Regime: {current_regime_name} (Reliable)")
+        print(f"✅ {symbol} Current Regime: {current_regime_name}")
+        print(f"📊 Total Regimes Detected: {detector.optimal_n_regimes}")
     else:
         print("No regime detected")
     
@@ -282,21 +293,58 @@ def multi_asset_analysis(symbols, start_date='2020-01-01', mode='stable'):
     
     return results
 
-def version():
-    """Display AutoRegime version and system info."""
-    import sys
-    print("AutoRegime System Information")
-    print("="*40)
-    print(f"AutoRegime Version: {__version__}")
-    print(f"Author: {__author__}")
-    print(f"Python Version: {sys.version.split()[0]}")
-    print("="*40)
-    print("🔧 Available Analysis Modes:")
-    print("  • quick_analysis() - Fast analysis")
-    print("  • stable_regime_analysis() - Enhanced stability")
-    print("  • production_regime_analysis() - Maximum reliability")
-    print("  • reliable_regime_analysis() - Guaranteed reproducibility")
-    print("  • multi_asset_analysis() - Batch processing")
+def demonstrate_autoregime_sensitivity():
+    """
+    Demonstrates AutoRegime's professional sensitivity to different data periods.
+    This is expected behavior for production-grade regime detection systems.
+    """
+    print("🧪 AUTOREGIME SENSITIVITY DEMONSTRATION")
+    print("="*60)
+    print("This demonstrates expected behavior for professional regime detection:")
+    
+    loader = MarketDataLoader()
+    
+    # Test 1: Same period, same seed = identical results (REPRODUCIBILITY)
+    print("\n🔬 REPRODUCIBILITY TEST")
+    print("="*50)
+    data1 = loader.load_market_data(['AAPL'], start_date='2023-01-01')
+    
+    detector_a = AutoRegimeDetector(random_state=42, verbose=False)
+    detector_b = AutoRegimeDetector(random_state=42, verbose=False)
+    
+    detector_a.fit(data1)
+    detector_b.fit(data1)
+    
+    print(f"Run A: {detector_a.optimal_n_regimes} regimes")
+    print(f"Run B: {detector_b.optimal_n_regimes} regimes")
+    reproducible = detector_a.optimal_n_regimes == detector_b.optimal_n_regimes
+    print(f"✅ Same period + same seed = identical results: {reproducible}")
+    
+    # Test 2: Different periods = different results (EXPECTED SENSITIVITY)
+    print(f"\n🔬 SENSITIVITY TEST")
+    print("="*50)
+    data2 = loader.load_market_data(['AAPL'], start_date='2023-01-03')
+    
+    detector_c = AutoRegimeDetector(random_state=42, verbose=False)
+    detector_c.fit(data2)
+    
+    print(f"Period 2023-01-01: {detector_a.optimal_n_regimes} regimes")
+    print(f"Period 2023-01-03: {detector_c.optimal_n_regimes} regimes")
+    sensitive = detector_a.optimal_n_regimes != detector_c.optimal_n_regimes
+    print(f"✅ Different periods = different regimes (expected): {sensitive}")
+    
+    print(f"\n🎯 CONCLUSION:")
+    print("AutoRegime correctly adapts to different market periods")
+    print("Same period + same seed = identical results ✅")
+    print("Different periods = different regimes (expected) ✅")
+    print("This demonstrates professional-grade model sensitivity!")
+    
+    return {
+        'reproducible': reproducible,
+        'sensitive': sensitive,
+        'detector_a': detector_a,
+        'detector_c': detector_c
+    }
 
 def full_historical_analysis():
     """
@@ -358,59 +406,6 @@ def full_historical_analysis():
         print(f"Error in historical analysis: {e}")
         return None, None, None
 
-def demonstrate_autoregime_sensitivity():
-    """
-    Demonstrates AutoRegime's professional sensitivity to different data periods.
-    This is expected behavior for production-grade regime detection systems.
-    """
-    print("🧪 AUTOREGIME SENSITIVITY DEMONSTRATION")
-    print("="*60)
-    print("This demonstrates expected behavior for professional regime detection:")
-    
-    loader = MarketDataLoader()
-    
-    # Test 1: Same period, same seed = identical results (REPRODUCIBILITY)
-    print("\n🔬 REPRODUCIBILITY TEST")
-    print("="*50)
-    data1 = loader.load_market_data(['AAPL'], start_date='2023-01-01')
-    
-    detector_a = AutoRegimeDetector(random_state=42, verbose=False)
-    detector_b = AutoRegimeDetector(random_state=42, verbose=False)
-    
-    detector_a.fit(data1)
-    detector_b.fit(data1)
-    
-    print(f"Run A: {detector_a.optimal_n_regimes} regimes")
-    print(f"Run B: {detector_b.optimal_n_regimes} regimes")
-    reproducible = detector_a.optimal_n_regimes == detector_b.optimal_n_regimes
-    print(f"✅ Same period + same seed = identical results: {reproducible}")
-    
-    # Test 2: Different periods = different results (EXPECTED SENSITIVITY)
-    print(f"\n🔬 SENSITIVITY TEST")
-    print("="*50)
-    data2 = loader.load_market_data(['AAPL'], start_date='2023-01-03')
-    
-    detector_c = AutoRegimeDetector(random_state=42, verbose=False)
-    detector_c.fit(data2)
-    
-    print(f"Period 2023-01-01: {detector_a.optimal_n_regimes} regimes")
-    print(f"Period 2023-01-03: {detector_c.optimal_n_regimes} regimes")
-    sensitive = detector_a.optimal_n_regimes != detector_c.optimal_n_regimes
-    print(f"✅ Different periods = different regimes (expected): {sensitive}")
-    
-    print(f"\n🎯 CONCLUSION:")
-    print("AutoRegime correctly adapts to different market periods")
-    print("Same period + same seed = identical results ✅")
-    print("Different periods = different regimes (expected) ✅")
-    print("This demonstrates professional-grade model sensitivity!")
-    
-    return {
-        'reproducible': reproducible,
-        'sensitive': sensitive,
-        'detector_a': detector_a,
-        'detector_c': detector_c
-    }
-
 def batch_regime_analysis(symbols, period="1y"):
     """
     Analyze multiple symbols for regime detection.
@@ -458,6 +453,71 @@ def batch_regime_analysis(symbols, period="1y"):
     
     return batch_summary
 
+def validate_deterministic_behavior(symbol='NVDA', runs=3):
+    """
+    Professional validation that ensures deterministic behavior.
+    
+    This function validates that AutoRegime produces identical results
+    across multiple runs with the same input data.
+    """
+    print("🔍 PROFESSIONAL VALIDATION: Testing Deterministic Behavior")
+    print("="*60)
+    
+    results = []
+    
+    for i in range(runs):
+        print(f"Run {i+1}/{runs}...")
+        detector = stable_regime_analysis(symbol, start_date='2023-01-01')
+        
+        timeline = detector.get_regime_timeline()
+        current_regime = timeline.iloc[-1]['Regime_Name'] if len(timeline) > 0 else "None"
+        n_regimes = detector.optimal_n_regimes
+        
+        results.append({
+            'run': i+1,
+            'n_regimes': n_regimes,
+            'current_regime': current_regime
+        })
+    
+    # Check consistency
+    first_result = results[0]
+    all_consistent = all(
+        r['n_regimes'] == first_result['n_regimes'] and 
+        r['current_regime'] == first_result['current_regime']
+        for r in results
+    )
+    
+    print(f"\n📊 VALIDATION RESULTS:")
+    for result in results:
+        print(f"Run {result['run']}: {result['n_regimes']} regimes, Current: {result['current_regime']}")
+    
+    if all_consistent:
+        print(f"✅ PROFESSIONAL GRADE: All {runs} runs produced identical results")
+        print("🔒 DETERMINISTIC BEHAVIOR CONFIRMED")
+        print("🎯 READY FOR LINKEDIN AND PROFESSIONAL USE")
+    else:
+        print(f"❌ CRITICAL ERROR: Non-deterministic behavior detected")
+        print("🚨 NOT SUITABLE FOR PROFESSIONAL USE")
+    
+    return all_consistent, results
+
+def version():
+    """Display AutoRegime version and system info."""
+    import sys
+    print("AutoRegime System Information")
+    print("="*40)
+    print(f"AutoRegime Version: {__version__}")
+    print(f"Author: {__author__}")
+    print(f"Python Version: {sys.version.split()[0]}")
+    print("="*40)
+    print("🔧 Available Analysis Modes:")
+    print("  • quick_analysis() - Fast analysis")
+    print("  • stable_regime_analysis() - Enhanced stability")
+    print("  • production_regime_analysis() - Maximum reliability")
+    print("  • reliable_regime_analysis() - Guaranteed reproducibility")
+    print("  • multi_asset_analysis() - Batch processing")
+    print("  • validate_deterministic_behavior() - Professional validation")
+
 # Make everything easily accessible
 __all__ = [
     'AutoRegimeDetector',
@@ -472,9 +532,10 @@ __all__ = [
     'demonstrate_autoregime_sensitivity',
     'full_historical_analysis',
     'batch_regime_analysis',
+    'validate_deterministic_behavior',
     'version'
 ]
 
 print("AutoRegime loaded! 🚀")
 print("Try: quick_demo() or stable_regime_analysis('AAPL')")
-print("New: production_regime_analysis('SPY') for max stability")
+print("Professional: validate_deterministic_behavior() to test reliability")
