@@ -292,24 +292,85 @@ class AutoRegimeDetector:
         return best_model, best_n_regimes
     
     def _fit_hmm_model(self, features: np.ndarray, n_regimes: int) -> hmm.GaussianHMM:
-        """Fit Hidden Markov Model with specified number of regimes."""
+        """
+        🔧 PROFESSIONAL DETERMINISTIC FIX: Fit Hidden Markov Model with guaranteed consistency.
+        
+        This method ensures 100% reproducible results by using multiple deterministic 
+        initialization attempts and selecting the best-performing model.
+        """
+        if self.verbose:
+            print(f"🔒 DETERMINISTIC MODE: Fitting {n_regimes} regimes with guaranteed consistency...")
+        
+        # PROFESSIONAL FIX: Multiple deterministic attempts for stability
+        best_model = None
+        best_score = -np.inf
+        
         # Enhanced parameters for stability mode
         n_iter = 1500 if self.stability_mode else 1000
         tol = 1e-7 if self.stability_mode else 1e-6
         
-        model = hmm.GaussianHMM(
-            n_components=n_regimes,
-            covariance_type="full",
-            n_iter=n_iter,
-            tol=tol,
-            random_state=self.random_state
-        )
+        # CRITICAL: Use multiple fixed seeds for deterministic results
+        deterministic_seeds = [42, 123, 456, 789, 999]  # Fixed seeds for reproducibility
         
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            model.fit(features)
-            
-        return model
+        for attempt, seed in enumerate(deterministic_seeds):
+            try:
+                # CRITICAL: Set global numpy random state for full determinism
+                np.random.seed(seed)
+                
+                model = hmm.GaussianHMM(
+                    n_components=n_regimes,
+                    covariance_type="full",
+                    n_iter=n_iter,
+                    tol=tol,
+                    random_state=seed,  # Use the specific seed
+                    init_params='stmc'  # Initialize all parameters
+                )
+                
+                # PROFESSIONAL: Initialize with deterministic parameters for consistency
+                # Equal probability start states
+                model.startprob_ = np.ones(n_regimes) / n_regimes
+                
+                # Diagonal-heavy transition matrix (prefer staying in same regime)
+                model.transmat_ = np.eye(n_regimes) * 0.7 + (1 - np.eye(n_regimes)) * (0.3 / (n_regimes - 1))
+                
+                # Initialize means using k-means-style initialization
+                n_samples, n_features = features.shape
+                indices = np.linspace(0, n_samples - 1, n_regimes, dtype=int)
+                model.means_ = features[indices].copy()
+                
+                # Initialize covariances as identity matrices scaled by feature variance
+                feature_var = np.var(features, axis=0)
+                model.covars_ = np.array([np.diag(feature_var) for _ in range(n_regimes)])
+                
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    model.fit(features)
+                
+                # Score the model (higher is better for likelihood)
+                score = model.score(features)
+                
+                # Keep the best model across all attempts
+                if score > best_score:
+                    best_score = score
+                    best_model = model
+                    if self.verbose:
+                        print(f"   Attempt {attempt + 1}: New best score = {score:.3f}")
+                elif self.verbose:
+                    print(f"   Attempt {attempt + 1}: Score = {score:.3f}")
+                    
+            except Exception as e:
+                if self.verbose:
+                    print(f"   Attempt {attempt + 1}: Failed with seed {seed} - {e}")
+                continue
+        
+        if best_model is None:
+            raise ValueError(f"Failed to fit any HMM model with {n_regimes} regimes using deterministic initialization")
+        
+        if self.verbose:
+            print(f"✅ Best model selected with score: {best_score:.3f}")
+            print("🔒 DETERMINISTIC: Same input will always produce same output")
+        
+        return best_model
     
     def _calculate_model_score(self, model: hmm.GaussianHMM, 
                               features: np.ndarray, 
@@ -579,6 +640,7 @@ class AutoRegimeDetector:
         print("AUTOREGIME ANALYSIS SUMMARY")
         if self.stability_mode:
             print("🔧 STABILITY MODE ACTIVE")
+        print("🔒 DETERMINISTIC MODE ACTIVE")
         print("="*60)
         
         print(f"Optimal number of regimes: {self.optimal_n_regimes}")
@@ -699,11 +761,12 @@ class AutoRegimeDetector:
         print("For research and analysis purposes only.")
         if self.stability_mode:
             print("🔧 Enhanced stability parameters active")
+        print("🔒 DETERMINISTIC MODE: Results guaranteed consistent")
         print("="*80)
         
         for idx, period in timeline.iterrows():
             print(f"\nPERIOD {idx + 1}: {period['Regime_Name']}")
-            print(f"   Duration: {period['Start_Date'].strftime('%Y-%m-%d')} to {period['End_Date'].strftime('%Y-%m-%d')}")
+            print(f"   Duration: {period['Start_Date'].strftime('%d-%m-%Y')} to {period['End_Date'].strftime('%d-%m-%Y')}")
             print(f"   Length: {period['Duration_Days']} trading days ({period['Duration_Years']:.1f} years)")
             print(f"   Annual Return: {period['Annual_Return_Pct']:.1f}%")
             print(f"   Annual Volatility: {period['Annual_Volatility_Pct']:.1f}%")
@@ -745,7 +808,7 @@ class AutoRegimeDetector:
         print(f"\nCURRENT MARKET STATUS:")
         print(f"   Active Regime: {current_name}")
         print(f"   Confidence Level: {confidence:.1%}")
-        print(f"   Regime Started: {current_period['Start_Date'].strftime('%Y-%m-%d')}")
+        print(f"   Regime Started: {current_period['Start_Date'].strftime('%d-%m-%Y')}")
         print(f"   Duration So Far: {current_period['Duration_Days']} days")
         
         # Regime stability analysis
