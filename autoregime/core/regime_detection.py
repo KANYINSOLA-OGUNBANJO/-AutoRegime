@@ -509,10 +509,9 @@ class AutoRegimeDetector:
     
     def _generate_regime_names(self) -> None:
         """
-        🔧 COMPLETELY FIXED: Generate intuitive names for regimes based on RETURN PERFORMANCE FIRST.
+        🔧 FIXED: Generate intuitive names with REALISTIC thresholds for proper classification.
         
-        This was the core bug - the old logic was backwards, using drawdown to classify regimes
-        instead of focusing on the primary characteristic: RETURNS.
+        The previous thresholds were too restrictive, causing Bull Markets to be misclassified as Crisis.
         """
         self.regime_names = {}
         
@@ -530,10 +529,10 @@ class AutoRegimeDetector:
                     'frequency': char['frequency']
                 })
         
-        # 🔧 FIXED: Sort by RETURNS FIRST (not Sharpe ratio which can be misleading)
+        # Sort by RETURNS FIRST
         regime_data.sort(key=lambda x: x['return'], reverse=True)
         
-        # 🔧 FIXED: Classification based on RETURNS with logical secondary factors
+        # 🔧 FIXED: REALISTIC classification thresholds based on actual market conditions
         for i, regime_info in enumerate(regime_data):
             regime_num = regime_info['regime']
             returns = regime_info['return']
@@ -541,33 +540,33 @@ class AutoRegimeDetector:
             sharpe = regime_info['sharpe']
             drawdown = regime_info['drawdown']
             
-            # 🔧 COMPLETELY REWRITTEN LOGIC: Returns-first classification
-            if returns > 0.30:  # Exceptional performance (>30% annual)
-                if sharpe > 2.0:  # High returns + great risk-adjusted performance
+            # 🔧 COMPLETELY FIXED: Realistic returns-based classification
+            if returns > 0.20:  # Exceptional performance (>20% annual) - LOWERED from 30%
+                if sharpe > 1.5:  # High returns + great risk-adjusted performance - LOWERED from 2.0
                     name = "Goldilocks"
                 else:  # High returns but higher volatility
                     name = "Bull Market"
                     
-            elif returns > 0.15:  # Strong performance (15-30% annual)
-                if volatility < 0.25:  # Good returns + reasonable volatility
+            elif returns > 0.08:  # Strong performance (8-20% annual) - LOWERED from 15%
+                if volatility < 0.30:  # Good returns + reasonable volatility - RAISED from 25%
                     name = "Steady Growth"
                 else:  # Good returns but high volatility
                     name = "Bull Market"
                     
-            elif returns > 0.05:  # Moderate performance (5-15% annual)
-                if sharpe > 0.5:  # Decent risk-adjusted returns
+            elif returns > 0.02:  # Moderate performance (2-8% annual) - LOWERED from 5%
+                if sharpe > 0.3:  # Decent risk-adjusted returns - LOWERED from 0.5
                     name = "Steady Growth"
                 else:  # Moderate returns, poor risk-adjusted
                     name = "Sideways"
                     
-            elif returns > -0.05:  # Near-zero performance (-5% to +5%)
+            elif returns > -0.10:  # Near-zero to moderate negative (-10% to +2%) - CHANGED from -5%
                 name = "Sideways"
                 
-            elif returns > -0.20:  # Moderate losses (-20% to -5%)
+            elif returns > -0.25:  # Moderate losses (-25% to -10%) - CHANGED from -20%
                 name = "Risk-Off"
                 
-            else:  # Severe losses (< -20%)
-                if drawdown > 0.30:  # Severe losses + high drawdown
+            else:  # Severe losses (< -25%) - CHANGED from -20%
+                if drawdown > 0.35:  # Severe losses + high drawdown - RAISED from 30%
                     name = "Crisis"
                 else:  # Severe losses but contained drawdown
                     name = "Bear Market"
@@ -711,22 +710,22 @@ class AutoRegimeDetector:
             print(f"   Sharpe Ratio: {period['Sharpe_Ratio']:.2f}")
             print(f"   Max Drawdown: {period['Max_Drawdown_Pct']:.1f}%")
             
-            # 🔧 FIXED: Market characteristics based on RETURNS FIRST
+            # 🔧 FIXED: Market characteristics based on RETURNS FIRST with corrected thresholds
             annual_return = period['Annual_Return_Pct']
             sharpe = period['Sharpe_Ratio']
             
-            if annual_return > 30:
-                if sharpe > 2.0:
+            if annual_return > 20:
+                if sharpe > 1.5:
                     characteristics = "Goldilocks conditions - exceptional returns with excellent risk management"
                 else:
                     characteristics = "Bull market conditions - exceptional growth with elevated volatility"
-            elif annual_return > 15:
+            elif annual_return > 8:
                 characteristics = "Strong growth conditions - solid performance with good fundamentals"
-            elif annual_return > 5:
+            elif annual_return > 2:
                 characteristics = "Steady growth conditions - moderate positive performance"
-            elif annual_return > -5:
+            elif annual_return > -10:
                 characteristics = "Sideways conditions - range-bound market with mixed signals"
-            elif annual_return > -20:
+            elif annual_return > -25:
                 characteristics = "Risk-off conditions - defensive positioning and caution"
             else:
                 characteristics = "Crisis conditions - severe market stress requiring immediate attention"
