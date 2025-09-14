@@ -84,7 +84,7 @@ def quick_analysis(symbols, start_date='2023-01-01'):
         
     except Exception as e:
         print(f"Analysis error: {str(e)}")
-        return None, None
+        return None
 
 def stable_regime_analysis(symbol, start_date='2020-01-01'):
     """
@@ -404,6 +404,51 @@ def demonstrate_autoregime_sensitivity():
         'detector_c': detector_c
     }
 
+def batch_regime_analysis(symbols, period="1y"):
+    """
+    Analyze multiple symbols for regime detection.
+    
+    Parameters:
+    -----------
+    symbols : list
+        List of ticker symbols
+    period : str
+        Analysis period (default: '1y')
+        
+    Returns:
+    --------
+    dict
+        Batch analysis results
+    """
+    results = {}
+    
+    print(f"🔄 Starting batch analysis for {len(symbols)} symbols...")
+    
+    for symbol in symbols:
+        try:
+            results[symbol] = stable_regime_analysis(symbol)
+        except Exception as e:
+            results[symbol] = {"error": f"Failed to analyze {symbol}: {str(e)}"}
+    
+    # Summary statistics
+    successful = sum(1 for r in results.values() if not isinstance(r, dict) or 'error' not in r)
+    failed = len(symbols) - successful
+    
+    batch_summary = {
+        'batch_statistics': {
+            'total_symbols': len(symbols),
+            'successful_analyses': successful,
+            'failed_analyses': failed,
+            'success_rate': f"{(successful/len(symbols)*100):.1f}%"
+        },
+        'results': results,
+        'generated_at': f"{__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}"
+    }
+    
+    print(f"✅ Batch analysis complete: {successful}/{len(symbols)} successful")
+    
+    return batch_summary
+
 # Make everything easily accessible
 __all__ = [
     'AutoRegimeDetector',
@@ -417,6 +462,7 @@ __all__ = [
     'multi_asset_analysis',
     'demonstrate_autoregime_sensitivity',
     'full_historical_analysis',
+    'batch_regime_analysis',
     'version'
 ]
 
