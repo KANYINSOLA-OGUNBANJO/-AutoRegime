@@ -63,37 +63,44 @@ def stable_regime_analysis(symbol, start_date='2020-01-01'):
         returns = data['Close'].pct_change().dropna()
         dates = returns.index
         
-        # Professional feature engineering (smoother features)
-        volatility_window = 60  # Longer window for stability
-        momentum_window = 40
+        # FIXED: Simpler feature engineering to avoid array size mismatches
+        volatility_window = 20
         
-        volatility = returns.rolling(volatility_window).std().fillna(returns.std())
-        momentum = data['Close'].pct_change(momentum_window).fillna(0)
+        # Calculate features with proper alignment
+        volatility = returns.rolling(volatility_window).std()
         
-        # Create feature matrix with proper scaling
+        # Create aligned features - start from volatility_window to ensure all have same length
+        start_idx = volatility_window
+        
+        returns_aligned = returns.iloc[start_idx:]
+        volatility_aligned = volatility.iloc[start_idx:]
+        dates_aligned = dates[start_idx:]
+        
+        # Create feature matrix - all arrays now have same length
         features = np.column_stack([
-            returns.values,
-            volatility.values, 
-            momentum.values
+            returns_aligned.values,
+            volatility_aligned.values
         ])
         
-        # Remove NaN values
+        # Remove any remaining NaN values
         valid_idx = ~np.isnan(features).any(axis=1)
-        features = features[valid_idx]
-        returns_clean = returns[valid_idx]
-        dates_clean = dates[valid_idx]
+        features_clean = features[valid_idx]
+        returns_clean = returns_aligned[valid_idx]
+        dates_clean = dates_aligned[valid_idx]
+        
+        if len(features_clean) < 100:
+            raise ValueError("Insufficient data for analysis")
         
         # Scale features
         scaler = StandardScaler()
-        features_scaled = scaler.fit_transform(features)
+        features_scaled = scaler.fit_transform(features_clean)
         
         # PROFESSIONAL HMM with proper parameters
         model = hmm.GaussianHMM(
             n_components=3, 
             random_state=42,
-            n_iter=200,  # More iterations for stability
-            tol=1e-6,    # Higher tolerance
-            covariance_type="full"  # Better modeling
+            n_iter=100,
+            tol=1e-4
         )
         
         with warnings.catch_warnings():
