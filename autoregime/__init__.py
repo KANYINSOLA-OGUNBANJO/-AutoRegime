@@ -117,13 +117,13 @@ def stable_regime_analysis(symbol, start_date='2020-01-01'):
     loader = MarketDataLoader()
     data = loader.load_market_data([symbol], start_date=start_date)
     
-    # Stability-enhanced parameters
+    # CORRECTED: More balanced parameters for proper regime detection
     detector = AutoRegimeDetector(
-        stability_mode=True,         # Enable stability mode
+        stability_mode=False,        # FIXED: Disable overly restrictive mode
         random_state=42,             # Deterministic results
-        min_regime_duration=20,      # Longer minimum duration
-        max_regimes=4,               # Limit complexity  
-        economic_significance_threshold=0.05,  # Higher threshold for significance
+        min_regime_duration=12,      # FIXED: Reduced from 20 to 12 days
+        max_regimes=6,               # FIXED: Increased from 4 to 6 regimes
+        economic_significance_threshold=0.03,  # FIXED: Reduced from 0.05 to 0.03
         verbose=True
     )
     
@@ -167,13 +167,13 @@ def production_regime_analysis(symbol, start_date='2020-01-01'):
     loader = MarketDataLoader()
     data = loader.load_market_data([symbol], start_date=start_date)
     
-    # Production-grade parameters (maximum stability)
+    # CORRECTED: Production-grade parameters with proper balance
     detector = AutoRegimeDetector(
-        stability_mode=True,         # Enable stability mode
+        stability_mode=False,        # FIXED: Disable overly restrictive mode
         random_state=42,             # Deterministic results
-        min_regime_duration=30,      # Very stable regimes (30+ days)
-        max_regimes=3,               # Simple, interpretable (max 3 regimes)
-        economic_significance_threshold=0.08,  # High significance threshold (8%)
+        min_regime_duration=20,      # Stable regimes (20+ days)
+        max_regimes=5,               # FIXED: Increased from 3 to 5 regimes
+        economic_significance_threshold=0.04,  # FIXED: Reduced from 0.08 to 0.04
         verbose=False                # Clean output for production
     )
     
@@ -307,12 +307,12 @@ def full_historical_analysis():
         print(f"📊 Loading data for: {', '.join(symbols)}")
         data = loader.load_market_data(symbols, start_date='2018-01-01')
         
-        # Comprehensive analysis with enhanced parameters
+        # CORRECTED: Comprehensive analysis with balanced parameters
         detector = AutoRegimeDetector(
             max_regimes=8,                    # Allow more regimes for long history
             min_regime_duration=15,           # Moderate duration requirement
-            economic_significance_threshold=0.03,  # Sensitive to meaningful changes
-            stability_mode=True,              # Enhanced stability
+            economic_significance_threshold=0.025,  # FIXED: Reduced from 0.03 to 0.025
+            stability_mode=False,             # FIXED: Disable restrictive mode
             random_state=42,                  # Reproducible results
             verbose=True
         )
