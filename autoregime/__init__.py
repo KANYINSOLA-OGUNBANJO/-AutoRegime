@@ -201,26 +201,30 @@ def reliable_regime_analysis(symbol, start_date='2020-01-01'):
         
     Returns:
     --------
-    result : str
-        Human-readable current regime name
+    detector : AutoRegimeDetector
+        FIXED: Now returns detector object instead of string for consistency
         
     Example:
     --------
-    >>> result = reliable_regime_analysis('AAPL')
-    >>> print(f"AAPL regime: {result}")  # Always same result
+    >>> detector = reliable_regime_analysis('AAPL')
+    >>> timeline = detector.get_regime_timeline()
+    >>> current_regime = timeline.iloc[-1]['Regime_Name']
+    >>> print(f"AAPL regime: {current_regime}")  # Always same result
     """
     print(f"🔒 Reliable Analysis for {symbol} (Always same result)")
     
     detector = production_regime_analysis(symbol, start_date)
     
-    # Get current regime in simple format
+    # Get current regime for display but return detector object
     timeline = detector.get_regime_timeline()
     if len(timeline) > 0:
         current_regime_name = timeline.iloc[-1]['Regime_Name']
         print(f"✅ {symbol} Regime: {current_regime_name} (Reliable)")
-        return current_regime_name
     else:
-        return "No regime detected"
+        print("No regime detected")
+    
+    # FIXED: Return detector object, not string
+    return detector
 
 def multi_asset_analysis(symbols, start_date='2020-01-01', mode='stable'):
     """
@@ -238,13 +242,14 @@ def multi_asset_analysis(symbols, start_date='2020-01-01', mode='stable'):
     Returns:
     --------
     results : dict
-        Dictionary mapping symbols to their regime analysis results
+        Dictionary mapping symbols to their detector objects (all return detectors now)
         
     Example:
     --------
     >>> results = multi_asset_analysis(['AAPL', 'SPY', 'QQQ'])
     >>> for symbol, detector in results.items():
-    >>>     print(f"{symbol}: {detector.optimal_n_regimes} regimes")
+    >>>     if detector:  # Check if analysis succeeded
+    >>>         print(f"{symbol}: {detector.optimal_n_regimes} regimes")
     """
     print(f"📈 Multi-Asset Regime Analysis ({mode} mode)")
     print(f"Symbols: {', '.join(symbols)}")
@@ -265,13 +270,15 @@ def multi_asset_analysis(symbols, start_date='2020-01-01', mode='stable'):
     for symbol in symbols:
         try:
             print(f"\n--- Analyzing {symbol} ---")
-            results[symbol] = analysis_func(symbol, start_date)
+            detector = analysis_func(symbol, start_date)
+            results[symbol] = detector
         except Exception as e:
             print(f"❌ Error analyzing {symbol}: {e}")
             results[symbol] = None
     
     print(f"\n✅ Multi-asset analysis complete!")
-    print(f"📊 Successfully analyzed {len([r for r in results.values() if r is not None])}/{len(symbols)} assets")
+    successful_count = len([r for r in results.values() if r is not None])
+    print(f"📊 Successfully analyzed {successful_count}/{len(symbols)} assets")
     
     return results
 
@@ -418,7 +425,7 @@ def batch_regime_analysis(symbols, period="1y"):
     Returns:
     --------
     dict
-        Batch analysis results
+        Batch analysis results with detector objects
     """
     results = {}
     
@@ -426,12 +433,14 @@ def batch_regime_analysis(symbols, period="1y"):
     
     for symbol in symbols:
         try:
-            results[symbol] = stable_regime_analysis(symbol)
+            detector = stable_regime_analysis(symbol)
+            results[symbol] = detector
         except Exception as e:
-            results[symbol] = {"error": f"Failed to analyze {symbol}: {str(e)}"}
+            print(f"❌ Error analyzing {symbol}: {e}")
+            results[symbol] = None
     
     # Summary statistics
-    successful = sum(1 for r in results.values() if not isinstance(r, dict) or 'error' not in r)
+    successful = sum(1 for r in results.values() if r is not None)
     failed = len(symbols) - successful
     
     batch_summary = {
