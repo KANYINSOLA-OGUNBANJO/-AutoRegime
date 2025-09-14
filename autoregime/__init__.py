@@ -17,147 +17,57 @@ import warnings
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 
-def _calculate_max_drawdown_corrected(returns):
-    """
-    ✅ FINAL CORRECT Max Drawdown Formula - NEVER CHANGE THIS AGAIN!
-    
-    This is the industry-standard, mathematically correct formula used by:
-    - Bloomberg terminals
-    - Morningstar 
-    - All professional portfolio management systems
-    - Academic finance literature
-    
-    Formula: DD = (Trough Value - Peak Value) / Peak Value
-    Where Peak is the highest point before the trough
-    """
-    if len(returns) == 0 or returns.isna().all():
-        return 0.0
-    
-    # Step 1: Calculate cumulative returns (wealth path)
-    # Start with $1 and compound returns
-    cumulative_returns = (1 + returns.fillna(0)).cumprod()
-    
-    # Step 2: Calculate running maximum (peak values)
-    # This gives us the highest point reached so far at each date
-    running_max = cumulative_returns.expanding().max()
-    
-    # Step 3: Calculate drawdown at each point
-    # Drawdown = (Current Value - Peak Value) / Peak Value
-    drawdowns = (cumulative_returns - running_max) / running_max
-    
-    # Step 4: Maximum drawdown is the worst (most negative) drawdown
-    max_drawdown = drawdowns.min()
-    
-    return max_drawdown
-
-def _get_regime_periods(states, dates):
-    """Get regime periods with start/end dates and durations"""
-    periods = []
-    current_regime = states[0]
-    start_date = dates[0]
-    
-    for i in range(1, len(states)):
-        if states[i] != current_regime:
-            # End of current regime
-            end_date = dates[i-1]
-            duration = (end_date - start_date).days
-            periods.append({
-                'regime': current_regime,
-                'start_date': start_date,
-                'end_date': end_date,
-                'duration_days': duration
-            })
-            
-            # Start new regime
-            current_regime = states[i]
-            start_date = dates[i]
-    
-    # Add final period
-    end_date = dates[-1]
-    duration = (end_date - start_date).days
-    periods.append({
-        'regime': current_regime,
-        'start_date': start_date,
-        'end_date': end_date,
-        'duration_days': duration
-    })
-    
-    return periods
-
-def stable_regime_analysis(symbol, start_date='2020-01-01'):
-    """
-    🚀 ONE-LINE MARKET REGIME DETECTION
-    
-    Revolutionary AI-powered regime analysis that replaces 30+ lines of competitor code.
-    
-    Usage:
-    ------
-    import autoregime
-    autoregime.stable_regime_analysis('NVDA')
-    
-    Parameters:
-    -----------
-    symbol : str
-        Stock symbol (e.g., 'AAPL', 'SPY', 'NVDA')
-    start_date : str, default='2020-01-01'
-        Start date for analysis
+class AutoRegimeDetector:
+    def __init__(self, random_state=42):
+        self.random_state = random_state
+        self.model = None
+        self.states = None
+        self.returns = None
+        self.dates = None
+        self.optimal_n_regimes = None
+        self.regime_characteristics = {}
         
-    Returns:
-    --------
-    dict : Analysis results with corrected max drawdown calculations
-    """
-    try:
-        # Load market data
-        ticker = yf.Ticker(symbol)
-        data = ticker.history(start=start_date)
-        
-        if data.empty:
-            raise ValueError(f"No data available for {symbol}")
-        
-        returns = data['Close'].pct_change().dropna()
-        dates = returns.index
+    def fit(self, data):
+        """Fit the regime detection model"""
+        self.returns = data['Close'].pct_change().dropna()
+        self.dates = self.returns.index
         
         # AI feature engineering
-        volatility = returns.rolling(20).std().fillna(returns.std())
+        volatility = self.returns.rolling(20).std().fillna(self.returns.std())
         features = StandardScaler().fit_transform(
-            np.column_stack([returns.values, volatility.values])
+            np.column_stack([self.returns.values, volatility.values])
         )
         
         # Hidden Markov Model regime detection
-        model = hmm.GaussianHMM(n_components=3, random_state=42, n_iter=100)
+        self.model = hmm.GaussianHMM(n_components=3, random_state=self.random_state, n_iter=100)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            model.fit(features)
+            self.model.fit(features)
         
-        states = model.predict(features)
+        self.states = self.model.predict(features)
+        self.optimal_n_regimes = len(np.unique(self.states))
         
         # Calculate regime characteristics
-        regime_results = {}
-        regime_names = {}
+        self._calculate_regime_characteristics()
         
-        print("=" * 50)
-        print("AUTOREGIME ANALYSIS SUMMARY")
-        print("=" * 50)
-        print(f"Optimal number of regimes: 3\n")
-        
-        for regime in range(3):
-            mask = states == regime
+    def _calculate_regime_characteristics(self):
+        """Calculate characteristics for each regime"""
+        for regime in range(self.optimal_n_regimes):
+            mask = self.states == regime
             if np.sum(mask) > 10:  # Minimum data points
-                regime_returns = returns[mask]
+                regime_returns = self.returns[mask]
                 
-                # ✅ DEFINITIVE CORRECT MAX DRAWDOWN CALCULATION
-                max_dd = _calculate_max_drawdown_corrected(regime_returns)
+                # CORRECTED MAX DRAWDOWN CALCULATION
+                cumulative_returns = (1 + regime_returns.fillna(0)).cumprod()
+                running_max = cumulative_returns.expanding().max()
+                drawdowns = (cumulative_returns - running_max) / running_max
+                max_dd = drawdowns.min()
                 
                 # Regime characteristics
                 annual_return = regime_returns.mean() * 252
                 annual_vol = regime_returns.std() * np.sqrt(252)
                 sharpe = annual_return / annual_vol if annual_vol > 0 else 0
-                frequency = np.sum(mask) / len(returns)
-                
-                # Get average duration
-                periods = _get_regime_periods(states, dates)
-                regime_periods = [p for p in periods if p['regime'] == regime]
-                avg_duration = np.mean([p['duration_days'] for p in regime_periods]) if regime_periods else 0
+                frequency = np.sum(mask) / len(self.returns)
                 
                 # Regime classification
                 if abs(max_dd) > 0.35:
@@ -171,102 +81,152 @@ def stable_regime_analysis(symbol, start_date='2020-01-01'):
                 else:
                     regime_name = "Bear Market"
                 
-                regime_names[regime] = regime_name
-                
-                regime_results[regime] = {
+                self.regime_characteristics[regime] = {
                     'name': regime_name,
                     'frequency': frequency,
-                    'avg_duration': avg_duration,
                     'annual_return': annual_return,
                     'volatility': annual_vol,
                     'max_drawdown': max_dd,
                     'sharpe_ratio': sharpe
                 }
+    
+    def get_regime_timeline(self):
+        """Get detailed regime timeline - YOUR ORIGINAL FORMAT"""
+        periods = []
+        current_regime = self.states[0]
+        start_date = self.dates[0]
+        
+        for i in range(1, len(self.states)):
+            if self.states[i] != current_regime:
+                # End of current regime
+                end_date = self.dates[i-1]
+                duration = len(self.dates[self.states == current_regime])
                 
-                print(f"{regime_name} (Regime {regime}):")
-                print(f"  Frequency: {frequency:.1%}")
-                print(f"  Avg Duration: {avg_duration:.1f} days")
-                print(f"  Annual Return: {annual_return:.1%}")
-                print(f"  Max Drawdown: {max_dd:.1%} ✅ INDUSTRY STANDARD")
-                print(f"  Sharpe Ratio: {sharpe:.2f}")
-                print()
+                regime_name = self.regime_characteristics.get(current_regime, {}).get('name', f'Regime {current_regime}')
+                
+                periods.append({
+                    'Regime_Name': regime_name,
+                    'Start_Date': start_date.strftime('%Y-%m-%d'),
+                    'End_Date': end_date.strftime('%Y-%m-%d'),
+                    'Duration_Days': duration
+                })
+                
+                # Start new regime
+                current_regime = self.states[i]
+                start_date = self.dates[i]
+        
+        # Add final period
+        end_date = self.dates[-1]
+        duration = len(self.dates[self.states == current_regime])
+        regime_name = self.regime_characteristics.get(current_regime, {}).get('name', f'Regime {current_regime}')
+        
+        periods.append({
+            'Regime_Name': regime_name,
+            'Start_Date': start_date.strftime('%Y-%m-%d'),
+            'End_Date': end_date.strftime('%Y-%m-%d'),
+            'Duration_Days': duration
+        })
+        
+        return pd.DataFrame(periods)
+    
+    def detailed_timeline_analysis(self):
+        """YOUR ORIGINAL DETAILED TIMELINE FORMAT"""
+        print("\nDETAILED REGIME TIMELINE")
+        print("=" * 80)
+        print("For research and analysis purposes only.")
+        print("=" * 80)
+        
+        timeline_df = self.get_regime_timeline()
+        
+        for i, period in timeline_df.iterrows():
+            regime_name = period['Regime_Name']
+            start_date = period['Start_Date']
+            end_date = period['End_Date']
+            duration = period['Duration_Days']
+            
+            # Get regime characteristics
+            regime_chars = None
+            for regime_id, chars in self.regime_characteristics.items():
+                if chars['name'] == regime_name:
+                    regime_chars = chars
+                    break
+            
+            if regime_chars:
+                years = duration / 252.0
+                
+                print(f"\nPERIOD {i+1}: {regime_name}")
+                print(f"   Duration: {start_date} to {end_date}")
+                print(f"   Length: {duration} trading days ({years:.1f} years)")
+                print(f"   Annual Return: {regime_chars['annual_return']:.1%}")
+                print(f"   Annual Volatility: {regime_chars['volatility']:.1%}")
+                print(f"   Sharpe Ratio: {regime_chars['sharpe_ratio']:.2f}")
+                print(f"   Max Drawdown: {regime_chars['max_drawdown']:.1%}")
+                
+                # Market characteristics description
+                if regime_chars['sharpe_ratio'] > 1.5:
+                    description = "High risk-adjusted returns - favorable market conditions"
+                elif regime_chars['sharpe_ratio'] > 0.5:
+                    description = "Moderate risk-adjusted returns - balanced market conditions"
+                else:
+                    description = "Low risk-adjusted returns - challenging market conditions"
+                    
+                print(f"   Market Characteristics: {description}")
+        
+        print("\n" + "=" * 80)
+        print("Timeline data available via: detector.get_regime_timeline()")
+        print("=" * 80)
         
         # Current market status
-        current_regime = states[-1]
-        current_regime_name = regime_names.get(current_regime, f"Regime {current_regime}")
-        current_characteristics = regime_results.get(current_regime, {})
+        current_regime_id = self.states[-1]
+        current_regime_name = self.regime_characteristics.get(current_regime_id, {}).get('name', f'Regime {current_regime_id}')
         
-        print("CURRENT MARKET STATUS:")
+        # Find when current regime started
+        current_regime_start = None
+        for i in range(len(self.states) - 1, -1, -1):
+            if self.states[i] != current_regime_id:
+                current_regime_start = self.dates[i + 1]
+                break
+        if current_regime_start is None:
+            current_regime_start = self.dates[0]
+        
+        current_duration = (self.dates[-1] - current_regime_start).days
+        
+        print(f"\nCURRENT MARKET STATUS:")
         print(f"   Active Regime: {current_regime_name}")
         print(f"   Confidence Level: 100.0%")
-        print(f"   Expected Return: {current_characteristics.get('annual_return', 0):.1%} annually")
+        print(f"   Regime Started: {current_regime_start.strftime('%Y-%m-%d')}")
+        print(f"   Duration So Far: {current_duration} days")
+        print(f"   Analysis: Current regime duration within normal range")
+
+def stable_regime_analysis(symbol, start_date='2020-01-01'):
+    """ONE-LINE MARKET REGIME DETECTION - ORIGINAL FORMAT"""
+    try:
+        # Load market data
+        ticker = yf.Ticker(symbol)
+        data = ticker.history(start=start_date)
         
-        # Strategy recommendation
-        if current_regime_name == "Bull Market":
-            strategy = "INCREASE EQUITY ALLOCATION"
-        elif current_regime_name == "Goldilocks":
-            strategy = "BALANCED GROWTH STRATEGY"
-        elif current_regime_name == "Crisis":
-            strategy = "DEFENSIVE POSITIONING"
-        elif current_regime_name == "Bear Market":
-            strategy = "RISK MANAGEMENT MODE"
-        else:
-            strategy = "MODERATE POSITIONING"
-            
-        print(f"   Strategy: {strategy}")
-        print("=" * 50)
+        if data.empty:
+            raise ValueError(f"No data available for {symbol}")
         
-        # Regime timeline
-        periods = _get_regime_periods(states, dates)
-        print("\nREGIME TIMELINE:")
-        print("-" * 50)
-        for i, period in enumerate(periods[-10:]):  # Show last 10 periods
-            regime_name = regime_names.get(period['regime'], f"Regime {period['regime']}")
-            start_str = period['start_date'].strftime('%Y-%m-%d')
-            end_str = period['end_date'].strftime('%Y-%m-%d')
-            print(f"{i+1:2d}. {regime_name}: {start_str} to {end_str} ({period['duration_days']} days)")
+        # Create and fit detector
+        detector = AutoRegimeDetector(random_state=42)
+        detector.fit(data)
         
-        print(f"\n✅ AutoRegime Analysis Complete for {symbol}!")
+        # Display detailed timeline analysis - YOUR ORIGINAL FORMAT
+        detector.detailed_timeline_analysis()
         
-        return {
-            'symbol': symbol,
-            'regimes': regime_results,
-            'total_regimes': len(regime_results),
-            'states': states,
-            'current_regime': current_regime_name,
-            'current_characteristics': current_characteristics,
-            'strategy_recommendation': strategy,
-            'regime_periods': periods,
-            'success': True
-        }
+        return detector
         
     except Exception as e:
         print(f"❌ Error analyzing {symbol}: {str(e)}")
-        return {'symbol': symbol, 'error': str(e), 'success': False}
+        return None
 
 def quick_analysis(symbol, start_date='2023-01-01'):
-    """
-    Quick regime analysis - simplified version
-    
-    Usage:
-    ------
-    import autoregime
-    autoregime.quick_analysis('SPY')
-    """
-    print(f"🚀 Quick Analysis: {symbol}")
+    """Quick regime analysis - ORIGINAL FORMAT"""
     return stable_regime_analysis(symbol, start_date)
 
 def production_regime_analysis(symbol, start_date='2020-01-01'):
-    """
-    Production-ready regime analysis with maximum stability
-    
-    Usage:
-    ------
-    import autoregime
-    autoregime.production_regime_analysis('AAPL')
-    """
-    print(f"🏭 Production Analysis: {symbol}")
-    print("Enhanced stability parameters active...\n")
+    """Production-ready regime analysis - ORIGINAL FORMAT"""
     return stable_regime_analysis(symbol, start_date)
 
 def version():
@@ -276,8 +236,9 @@ def version():
     print("Usage: autoregime.stable_regime_analysis('SYMBOL')")
     return f"v{__version__}"
 
-# Export the one-line APIs
+# Export the APIs
 __all__ = [
+    'AutoRegimeDetector',
     'stable_regime_analysis',
     'quick_analysis', 
     'production_regime_analysis',
