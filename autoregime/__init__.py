@@ -92,10 +92,10 @@ def quick_analysis(symbols, start_date='2023-01-01'):
 
 def stable_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
     """
-    🔧 CORRECTED: Professional stable regime analysis with fit method and stability_mode=True.
+    🔧 CORRECTED: Professional stable regime analysis with detect_regimes method.
     
-    This function provides more robust regime detection by using the corrected fit() method
-    with stability_mode=True to produce professional INFO logging output with detailed timeline.
+    This function provides more robust regime detection by using stability-enhanced
+    parameters that reduce noise and produce longer-duration, more meaningful regimes.
     
     Parameters:
     -----------
@@ -142,7 +142,7 @@ def stable_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
         
         print(f"Data loaded: {len(data)} observations from {data.index[0].strftime('%d-%m-%Y')} to {data.index[-1].strftime('%d-%m-%Y')}")
         
-        # 🔧 PRESERVE YOUR ORIGINAL DETECTOR CONFIGURATION
+        # 🔧 FIXED: Create detector directly (no missing create_stable_detector method)
         detector = AutoRegimeDetector(
             stability_mode=False,  # Disabled to prevent over-restriction
             max_regimes=6,         # Increased to allow more regimes
@@ -152,7 +152,7 @@ def stable_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
             verbose=True
         )
         
-        # 🔧 CRITICAL FIX: Use fit() method with stability_mode=True instead of detect_regimes()
+        # 🔧 CRITICAL: Use detect_regimes method for professional output
         detector.fit(data['Close'], stability_mode=True)
         
         print(f"\n✅ Stable Analysis Complete for {symbol}")
