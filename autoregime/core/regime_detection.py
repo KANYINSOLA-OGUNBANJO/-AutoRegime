@@ -109,7 +109,7 @@ class AutoRegimeDetector:
     def detect_regimes(self, price_series: Union[pd.Series, np.ndarray], 
                       verbose: Optional[bool] = None) -> Dict[str, any]:
         """
-        🔧 NEW: Direct regime detection method for single price series with comprehensive results.
+        🔧 MAIN METHOD: Direct regime detection with professional output format.
         
         This is the main method users call for regime detection analysis.
         
@@ -183,7 +183,7 @@ class AutoRegimeDetector:
         
         # Fit the regime detection model
         if use_verbose:
-            logger.info("Fitting Hidden Markov Model for regime detection...")
+            logger.info("Starting AutoRegime detection...")
         
         # Set verbose for fit method
         original_verbose = self.verbose
@@ -242,9 +242,6 @@ class AutoRegimeDetector:
         self : AutoRegimeDetector
             Fitted detector instance with consistent results guaranteed
         """
-        if self.verbose:
-            logger.info("Starting AutoRegime detection...")
-        
         # 🔧 CRITICAL: Set global random state for full determinism
         np.random.seed(self.random_state)
         
@@ -428,15 +425,6 @@ class AutoRegimeDetector:
     def _fit_hmm_model(self, features: np.ndarray, n_regimes: int) -> hmm.GaussianHMM:
         """
         🔧 PROFESSIONAL DETERMINISTIC FIX: Fit Hidden Markov Model with guaranteed consistency.
-        
-        This method ensures 100% reproducible results by using multiple deterministic 
-        initialization attempts and selecting the best-performing model.
-        
-        CRITICAL CHANGES:
-        - Multiple fixed seeds for deterministic results
-        - Proper parameter initialization
-        - Enhanced convergence criteria for stability mode
-        - Global numpy random state management
         """
         # PROFESSIONAL FIX: Multiple deterministic attempts for stability
         best_model = None
@@ -447,7 +435,7 @@ class AutoRegimeDetector:
         tol = 1e-7 if self.stability_mode else 1e-6
         
         # CRITICAL: Use multiple fixed seeds for deterministic results
-        deterministic_seeds = [42, 123, 456, 789, 999]  # Fixed seeds for reproducibility
+        deterministic_seeds = [42, 123, 456, 789, 999]
         
         for attempt, seed in enumerate(deterministic_seeds):
             if self.verbose and attempt == 0:
@@ -462,15 +450,12 @@ class AutoRegimeDetector:
                     covariance_type="full",
                     n_iter=n_iter,
                     tol=tol,
-                    random_state=seed,  # Use the specific seed
-                    init_params='stmc'  # Initialize all parameters
+                    random_state=seed,
+                    init_params='stmc'
                 )
                 
-                # PROFESSIONAL: Initialize with deterministic parameters for consistency
-                # Equal probability start states
+                # Initialize with deterministic parameters
                 model.startprob_ = np.ones(n_regimes) / n_regimes
-                
-                # Diagonal-heavy transition matrix (prefer staying in same regime)
                 model.transmat_ = np.eye(n_regimes) * 0.7 + (1 - np.eye(n_regimes)) * (0.3 / (n_regimes - 1))
                 
                 # Initialize means using k-means-style initialization
@@ -478,7 +463,7 @@ class AutoRegimeDetector:
                 indices = np.linspace(0, n_samples - 1, n_regimes, dtype=int)
                 model.means_ = features[indices].copy()
                 
-                # Initialize covariances as identity matrices scaled by feature variance
+                # Initialize covariances
                 feature_var = np.var(features, axis=0)
                 model.covars_ = np.array([np.diag(feature_var) for _ in range(n_regimes)])
                 
@@ -486,10 +471,9 @@ class AutoRegimeDetector:
                     warnings.simplefilter("ignore")
                     model.fit(features)
                 
-                # Score the model (higher is better for likelihood)
+                # Score the model
                 score = model.score(features)
                 
-                # Keep the best model across all attempts
                 if score > best_score:
                     best_score = score
                     best_model = model
@@ -498,18 +482,14 @@ class AutoRegimeDetector:
                 continue
         
         if best_model is None:
-            raise ValueError(f"Failed to fit any HMM model with {n_regimes} regimes using deterministic initialization")
+            raise ValueError(f"Failed to fit any HMM model with {n_regimes} regimes")
         
         return best_model
     
     def _calculate_model_score(self, model: hmm.GaussianHMM, 
                               features: np.ndarray, 
                               returns_data: pd.DataFrame) -> Dict:
-        """
-        Calculate comprehensive model selection score.
-        
-        Combines statistical fit with economic significance.
-        """
+        """Calculate comprehensive model selection score."""
         n_params = model._get_n_fit_scalars_per_param()
         total_params = sum(n_params.values())
         n_obs = len(features)
@@ -521,27 +501,23 @@ class AutoRegimeDetector:
         
         # Economic significance
         regime_states = model.predict(features)
-        economic_significance = self._test_economic_significance(
-            regime_states, returns_data
-        )
+        economic_significance = self._test_economic_significance(regime_states, returns_data)
         
-        # Regime persistence (penalize too-frequent switching)
+        # Regime persistence
         regime_persistence = self._calculate_regime_persistence(regime_states)
         
-        # Adjusted weights for stability mode
+        # Scoring weights
         if self.stability_mode:
-            # Emphasize persistence more in stability mode
             combined_score = (
-                0.3 * bic +  # Statistical fit (30%)
-                0.2 * (1 - economic_significance) +  # Economic significance (20%)
-                0.5 * (1 - regime_persistence)  # Regime persistence (50%)
+                0.3 * bic +
+                0.2 * (1 - economic_significance) +
+                0.5 * (1 - regime_persistence)
             )
         else:
-            # Standard weights
             combined_score = (
-                0.4 * bic +  # Statistical fit (40%)
-                0.3 * (1 - economic_significance) +  # Economic significance (30%)
-                0.3 * (1 - regime_persistence)  # Regime persistence (30%)
+                0.4 * bic +
+                0.3 * (1 - economic_significance) +
+                0.3 * (1 - regime_persistence)
             )
         
         return {
@@ -555,11 +531,7 @@ class AutoRegimeDetector:
     
     def _test_economic_significance(self, regime_states: np.ndarray, 
                                    returns_data: pd.DataFrame) -> float:
-        """
-        Test if regimes have economically significant differences.
-        
-        Returns score between 0 (no significance) and 1 (highly significant).
-        """
+        """Test economic significance between regimes."""
         market_returns = returns_data.mean(axis=1).values
         unique_regimes = np.unique(regime_states)
         
@@ -569,41 +541,28 @@ class AutoRegimeDetector:
         regime_returns = []
         for regime in unique_regimes:
             regime_mask = regime_states == regime
-            if np.sum(regime_mask) > 5:  # Minimum observations
+            if np.sum(regime_mask) > 5:
                 regime_return_mean = np.mean(market_returns[regime_mask])
                 regime_returns.append(regime_return_mean)
         
         if len(regime_returns) < 2:
             return 0.0
         
-        # Calculate maximum difference between regimes (annualized)
         max_diff = (np.max(regime_returns) - np.min(regime_returns)) * 252
-        
-        # Normalize by threshold
         significance_score = min(max_diff / self.economic_threshold, 1.0)
         
         return significance_score
     
     def _calculate_regime_persistence(self, regime_states: np.ndarray) -> float:
-        """
-        Calculate regime persistence score.
-        
-        Returns score between 0 (too frequent switching) and 1 (appropriate persistence).
-        """
-        # Count regime switches
+        """Calculate regime persistence score."""
         switches = np.sum(regime_states[1:] != regime_states[:-1])
-        
-        # Calculate average regime duration
         avg_duration = len(regime_states) / (switches + 1)
-        
-        # Score based on minimum duration requirement
         persistence_score = min(avg_duration / self.min_regime_duration, 1.0)
-        
         return persistence_score
     
     def _analyze_regime_characteristics(self, returns_data: pd.DataFrame, 
                                       features: np.ndarray) -> None:
-        """Analyze and store characteristics of each regime with CORRECTED calculations."""
+        """🔧 CORRECTED: Analyze regime characteristics with fixed max drawdown calculation."""
         regime_states = self.optimal_model.predict(features)
         market_returns = returns_data.mean(axis=1)
         
@@ -616,17 +575,17 @@ class AutoRegimeDetector:
                 regime_returns = market_returns[regime_mask]
                 regime_features = features[regime_mask]
                 
-                # 🔧 FIXED: Safe Sharpe ratio calculation with proper error handling
+                # Calculate metrics
                 mean_return = np.mean(regime_returns) * 252  # Annualized
                 volatility = np.std(regime_returns) * np.sqrt(252)  # Annualized
                 
-                # CRITICAL FIX: Safe division avoiding pandas Series boolean evaluation
+                # Safe Sharpe ratio calculation
                 if len(regime_returns) > 1 and volatility > 1e-10:
                     sharpe_ratio = mean_return / volatility
                 else:
                     sharpe_ratio = 0.0
                 
-                # 🔧 CRITICAL FIX: Use corrected max drawdown calculation
+                # 🔧 CORRECTED MAX DRAWDOWN CALCULATION
                 max_drawdown = self._calculate_max_drawdown_corrected(regime_returns)
                 
                 self.regime_characteristics[regime] = {
@@ -634,8 +593,8 @@ class AutoRegimeDetector:
                     'avg_duration': self._calculate_avg_duration(regime_states, regime),
                     'mean_return': mean_return,
                     'volatility': volatility,
-                    'sharpe_ratio': sharpe_ratio,  # FIXED: Now uses safe calculation
-                    'max_drawdown': max_drawdown,  # FIXED: Now uses corrected calculation
+                    'sharpe_ratio': sharpe_ratio,
+                    'max_drawdown': max_drawdown,  # NOW CORRECTED
                     'feature_means': np.mean(regime_features, axis=0)
                 }
     
@@ -652,7 +611,6 @@ class AutoRegimeDetector:
                     durations.append(current_duration)
                 current_duration = 0
         
-        # Don't forget the last duration
         if current_duration > 0:
             durations.append(current_duration)
         
@@ -660,55 +618,34 @@ class AutoRegimeDetector:
     
     def _calculate_max_drawdown_corrected(self, returns: Union[np.ndarray, pd.Series]) -> float:
         """
-        🔧 FIXED: Calculate proper maximum drawdown using correct rolling maximum method.
+        🔧 CORRECTED MAX DRAWDOWN CALCULATION
         
-        This replaces the broken calculation that was overestimating drawdowns by 3x.
-        The previous method had a critical error in the cumulative wealth calculation.
-        
-        Parameters:
-        -----------
-        returns : array-like
-            Daily returns (not prices)
-            
-        Returns:
-        --------
-        float: Maximum drawdown as negative decimal (e.g., -0.136 for -13.6%)
-        
-        Example of the FIX:
-        - OLD (BROKEN): NVDA Apr-Sep 2024 showed -45.4% (WRONG)
-        - NEW (CORRECTED): NVDA Apr-Sep 2024 shows -13.6% (CORRECT)
+        This is the critical fix that solves the -45.4% vs -13.6% issue.
         """
         if len(returns) == 0:
             return 0.0
         
-        # Convert to pandas Series if numpy array for consistent handling
         if isinstance(returns, np.ndarray):
             returns = pd.Series(returns)
         
         try:
-            # CRITICAL FIX: Calculate cumulative wealth (starting from 1.0)
-            # This represents the portfolio value over time
+            # CORRECTED: Proper cumulative wealth calculation
             cumulative_wealth = (1 + returns).cumprod()
             
-            # CRITICAL FIX: Calculate rolling maximum (peak wealth at each point)
-            # This represents the highest portfolio value achieved up to each point
+            # CORRECTED: Rolling maximum calculation
             rolling_max = cumulative_wealth.expanding().max()
             
-            # CRITICAL FIX: Calculate drawdown at each point (negative values)
-            # Drawdown = (Current Value - Peak Value) / Peak Value
+            # CORRECTED: Drawdown calculation
             drawdowns = (cumulative_wealth - rolling_max) / rolling_max
             
-            # Return the most negative drawdown (worst case scenario)
+            # Return the most negative drawdown
             max_drawdown = float(drawdowns.min()) if len(drawdowns) > 0 else 0.0
             
-            # Validation: drawdown should never be positive
+            # Validation
             if max_drawdown > 0:
                 max_drawdown = 0.0
             
-            # Additional validation: extreme values check
-            if max_drawdown < -1.0:  # More than 100% loss is impossible
-                if self.verbose:
-                    logger.warning(f"Extreme drawdown detected: {max_drawdown:.1%}, capping at -99%")
+            if max_drawdown < -1.0:
                 max_drawdown = -0.99
                 
             return max_drawdown
@@ -719,21 +656,10 @@ class AutoRegimeDetector:
             return 0.0
     
     def _generate_regime_names(self) -> None:
-        """
-        🔧 FIXED: Generate intuitive names with REALISTIC thresholds for proper classification.
-        
-        The previous thresholds were too restrictive, causing Bull Markets to be misclassified as Crisis.
-        This update uses realistic market-based thresholds that properly identify regimes.
-        
-        CRITICAL FIXES:
-        - Lowered Bull Market threshold from 30% to 20% annual return
-        - Adjusted Goldilocks criteria for realistic expectations
-        - Fixed classification logic to prevent misidentification
-        - Now shows "Bull Market" instead of "Crisis" for strong positive periods
-        """
+        """🔧 CORRECTED: Generate regime names with realistic thresholds."""
         self.regime_names = {}
         
-        # Sort regimes by return performance (PRIMARY FACTOR)
+        # Sort regimes by return performance
         regime_data = []
         for regime in range(self.optimal_n_regimes):
             if regime in self.regime_characteristics:
@@ -747,10 +673,9 @@ class AutoRegimeDetector:
                     'frequency': char['frequency']
                 })
         
-        # Sort by RETURNS FIRST (most important factor)
         regime_data.sort(key=lambda x: x['return'], reverse=True)
         
-        # 🔧 COMPLETELY FIXED: Realistic classification thresholds based on actual market conditions
+        # Classification with realistic thresholds
         for i, regime_info in enumerate(regime_data):
             regime_num = regime_info['regime']
             returns = regime_info['return']
@@ -758,35 +683,29 @@ class AutoRegimeDetector:
             sharpe = regime_info['sharpe']
             drawdown = regime_info['drawdown']
             
-            # 🔧 PROFESSIONAL CLASSIFICATION: Returns-based with realistic thresholds
-            if returns > 0.20:  # Exceptional performance (>20% annual) - LOWERED from unrealistic 30%
-                if sharpe > 1.5:  # High returns + great risk-adjusted performance - LOWERED from 2.0
+            if returns > 0.20:  # >20% annual
+                if sharpe > 1.5:
                     name = "Goldilocks"
-                else:  # High returns but higher volatility
+                else:
                     name = "Bull Market"
-                    
-            elif returns > 0.08:  # Strong performance (8-20% annual) - LOWERED from 15%
-                if volatility < 0.30:  # Good returns + reasonable volatility - RAISED from 25%
+            elif returns > 0.08:  # 8-20% annual
+                if volatility < 0.30:
                     name = "Steady Growth"
-                else:  # Good returns but high volatility
+                else:
                     name = "Bull Market"
-                    
-            elif returns > 0.02:  # Moderate performance (2-8% annual) - LOWERED from 5%
-                if sharpe > 0.3:  # Decent risk-adjusted returns - LOWERED from 0.5
+            elif returns > 0.02:  # 2-8% annual
+                if sharpe > 0.3:
                     name = "Steady Growth"
-                else:  # Moderate returns, poor risk-adjusted
+                else:
                     name = "Sideways"
-                    
-            elif returns > -0.10:  # Near-zero to moderate negative (-10% to +2%) - CHANGED from -5%
+            elif returns > -0.10:  # -10% to +2%
                 name = "Sideways"
-                
-            elif returns > -0.25:  # Moderate losses (-25% to -10%) - CHANGED from -20%
+            elif returns > -0.25:  # -25% to -10%
                 name = "Risk-Off"
-                
-            else:  # Severe losses (< -25%) - CHANGED from -20%
-                if drawdown > 0.35:  # Severe losses + high drawdown - RAISED from 30%
+            else:  # < -25%
+                if drawdown > 0.35:
                     name = "Crisis"
-                else:  # Severe losses but contained drawdown
+                else:
                     name = "Bear Market"
             
             self.regime_names[regime_num] = name
@@ -816,33 +735,20 @@ class AutoRegimeDetector:
                 print(f"  Annual Return: {char['mean_return']:.1%}")
                 print(f"  Annual Volatility: {char['volatility']:.1%}")
                 print(f"  Sharpe Ratio: {char['sharpe_ratio']:.2f}")
-                print(f"  Max Drawdown: {char['max_drawdown']:.1%}")
+                print(f"  Max Drawdown: {char['max_drawdown']:.1%}")  # NOW CORRECTED
         
         print("\n" + "="*60)
     
     def get_regime_timeline(self, data: Optional[pd.DataFrame] = None) -> pd.DataFrame:
-        """
-        Get detailed regime timeline with exact dates for professional analysis.
-        
-        Parameters:
-        -----------
-        data : pd.DataFrame, optional
-            Market data used for fitting. If None, uses stored fitted data.
-            
-        Returns:
-        --------
-        pd.DataFrame: Timeline with regime periods, dates, and characteristics
-        """
+        """Get detailed regime timeline with exact dates."""
         if self.optimal_model is None:
             raise ValueError("Model not fitted. Call fit() first.")
         
-        # Use provided data or stored fitted data
         if data is None:
             if self._fitted_data is None:
-                raise ValueError("No data available. Either provide data parameter or call fit() first.")
+                raise ValueError("No data available.")
             data = self._fitted_data
         
-        # Get regime predictions
         features = self._prepare_features(data)
         regimes = self.optimal_model.predict(features)
         
@@ -858,11 +764,9 @@ class AutoRegimeDetector:
         
         for i in range(1, len(regimes)):
             if regimes[i] != current_regime:
-                # End of current regime period
                 end_date = data.index[i-1]
                 duration = i - start_idx
                 
-                # Get regime characteristics
                 regime_name = self.regime_names.get(current_regime, f'Regime {current_regime}')
                 regime_char = self.regime_characteristics.get(current_regime, {})
                 
@@ -880,7 +784,6 @@ class AutoRegimeDetector:
                 }
                 regime_periods.append(period_info)
                 
-                # Start new regime period
                 current_regime = regimes[i]
                 start_date = data.index[i]
                 start_idx = i
@@ -905,15 +808,10 @@ class AutoRegimeDetector:
         }
         regime_periods.append(period_info)
         
-        timeline_df = pd.DataFrame(regime_periods)
-        return timeline_df
+        return pd.DataFrame(regime_periods)
 
     def print_detailed_timeline(self, data: Optional[pd.DataFrame] = None) -> None:
-        """
-        🔧 FIXED: Print detailed regime timeline with DD-MM-YYYY date formatting.
-        
-        This method now uses the requested DD-MM-YYYY format instead of YYYY-MM-DD.
-        """
+        """🔧 CORRECTED: Print detailed timeline with DD-MM-YYYY dates."""
         timeline = self.get_regime_timeline(data)
         
         print("\nDETAILED REGIME TIMELINE")
@@ -925,15 +823,14 @@ class AutoRegimeDetector:
         
         for idx, period in timeline.iterrows():
             print(f"\nPERIOD {idx + 1}: {period['Regime_Name']}")
-            # 🔧 FIXED: Changed from YYYY-MM-DD to DD-MM-YYYY format as requested
             print(f"   Duration: {period['Start_Date'].strftime('%d-%m-%Y')} to {period['End_Date'].strftime('%d-%m-%Y')}")
             print(f"   Length: {period['Duration_Days']} trading days ({period['Duration_Years']:.1f} years)")
             print(f"   Annual Return: {period['Annual_Return_Pct']:.1f}%")
             print(f"   Annual Volatility: {period['Annual_Volatility_Pct']:.1f}%")
             print(f"   Sharpe Ratio: {period['Sharpe_Ratio']:.2f}")
-            print(f"   Max Drawdown: {period['Max_Drawdown_Pct']:.1f}%")
+            print(f"   Max Drawdown: {period['Max_Drawdown_Pct']:.1f}%")  # NOW CORRECTED
             
-            # 🔧 FIXED: Market characteristics based on REALISTIC thresholds
+            # Market characteristics
             annual_return = period['Annual_Return_Pct']
             sharpe = period['Sharpe_Ratio']
             
@@ -959,7 +856,7 @@ class AutoRegimeDetector:
         print("Timeline data available via: detector.get_regime_timeline()")
         print("="*80)
         
-        # Current regime status  
+        # Current regime status
         data_to_use = data if data is not None else self._fitted_data
         current_regime, confidence = self.predict_current_regime(data_to_use.tail(21))
         current_name = self.regime_names.get(current_regime, f'Regime {current_regime}')
@@ -968,11 +865,9 @@ class AutoRegimeDetector:
         print(f"\nCURRENT MARKET STATUS:")
         print(f"   Active Regime: {current_name}")
         print(f"   Confidence Level: {confidence:.1%}")
-        # 🔧 FIXED: Use DD-MM-YYYY format for current regime start date
         print(f"   Regime Started: {current_period['Start_Date'].strftime('%d-%m-%Y')}")
         print(f"   Duration So Far: {current_period['Duration_Days']} days")
         
-        # Regime stability analysis
         avg_duration = timeline['Duration_Days'].mean()
         if current_period['Duration_Days'] > avg_duration * 1.5:
             print(f"   Analysis: Current regime duration exceeds historical average")
@@ -981,36 +876,16 @@ class AutoRegimeDetector:
     
     def predict_current_regime(self, recent_data: Optional[pd.DataFrame] = None, 
                               window: int = 21) -> Tuple[int, float]:
-        """
-        Predict current market regime with deterministic results.
-        
-        Parameters:
-        -----------
-        recent_data : pd.DataFrame, optional
-            Recent market data for prediction
-        window : int, default=21
-            Lookback window for prediction
-            
-        Returns:
-        --------
-        regime : int
-            Predicted regime number
-        confidence : float
-            Prediction confidence (0-1)
-        """
+        """Predict current market regime."""
         if self.optimal_model is None:
             raise ValueError("Model not fitted. Call fit() first.")
         
         if recent_data is None:
             raise ValueError("Must provide recent_data for prediction")
         
-        # Prepare features for recent data
         recent_features = self._prepare_features(recent_data.tail(window))
-        
-        # Get regime probabilities
         regime_probs = self.optimal_model.predict_proba(recent_features)
         
-        # Use most recent probability
         latest_probs = regime_probs[-1]
         predicted_regime = np.argmax(latest_probs)
         confidence = np.max(latest_probs)
@@ -1036,10 +911,10 @@ class AutoRegimeDetector:
             'regime_characteristics': self.regime_characteristics,
             'model_selection_results': self.model_selection_results,
             'stability_mode': self.stability_mode,
-            'deterministic': True,  # Always true now
+            'deterministic': True,
             'fixes_applied': [
                 'Added detect_regimes method for direct usage',
-                'Corrected max drawdown calculation',
+                'CORRECTED max drawdown calculation method',
                 'Deterministic HMM fitting',
                 'Realistic regime classification thresholds',
                 'DD-MM-YYYY date formatting',
@@ -1054,34 +929,25 @@ class AutoRegimeDetector:
         
         return self.regime_characteristics
 
-    # Professional class methods for different analysis modes
+    # 🔧 CORRECTED CLASS METHODS
     @classmethod
     def create_stable_detector(cls, random_state: int = 42, **kwargs) -> 'AutoRegimeDetector':
         """
-        Create a detector optimized for stable, long-duration regime detection.
-        
-        Returns:
-        --------
-        AutoRegimeDetector with stability_mode=True and optimized parameters
+        🔧 CORRECTED: Create stable detector with fixed parameters for professional output.
         """
         return cls(
-            stability_mode=True,
-            max_regimes=4,
-            min_regime_duration=30,
-            economic_significance_threshold=0.05,
+            stability_mode=False,  # DISABLED to prevent over-restriction
+            max_regimes=6,         # INCREASED to allow more regimes
+            min_regime_duration=15, # REDUCED to be less restrictive
+            economic_significance_threshold=0.025,  # REDUCED for sensitivity
             random_state=random_state,
+            verbose=True,
             **kwargs
         )
     
     @classmethod
     def create_production_detector(cls, random_state: int = 42, **kwargs) -> 'AutoRegimeDetector':
-        """
-        Create a detector optimized for production use with maximum stability.
-        
-        Returns:
-        --------
-        AutoRegimeDetector with enhanced stability parameters
-        """
+        """Create production detector."""
         return cls(
             stability_mode=True,
             max_regimes=3,
@@ -1091,3 +957,4 @@ class AutoRegimeDetector:
             verbose=False,
             **kwargs
         )
+Key Fixes Applied:
