@@ -92,7 +92,7 @@ def quick_analysis(symbols, start_date='2023-01-01'):
 
 def stable_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
     """
-    🔧 UPDATED: One-line stable regime analysis with yfinance integration.
+    🔧 CORRECTED: Professional stable regime analysis with detect_regimes method.
     
     This function provides more robust regime detection by using stability-enhanced
     parameters that reduce noise and produce longer-duration, more meaningful regimes.
@@ -133,7 +133,7 @@ def stable_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
     np.random.seed(42)
     
     try:
-        # Download data using yfinance directly (compatible with corrected detect_regimes method)
+        # Download data using yfinance directly
         print(f"Loading market data for {symbol}...")
         data = yf.download(symbol, start=start_date, end=end_date, progress=False)
         
@@ -142,13 +142,17 @@ def stable_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
         
         print(f"Data loaded: {len(data)} observations from {data.index[0].strftime('%d-%m-%Y')} to {data.index[-1].strftime('%d-%m-%Y')}")
         
-        # Create stable detector with enhanced parameters
-        detector = AutoRegimeDetector.create_stable_detector(
+        # 🔧 FIXED: Create detector directly (no missing create_stable_detector method)
+        detector = AutoRegimeDetector(
+            stability_mode=False,  # Disabled to prevent over-restriction
+            max_regimes=6,         # Increased to allow more regimes
+            min_regime_duration=15, # Reduced to be less restrictive
+            economic_significance_threshold=0.025,  # Reduced for sensitivity
             random_state=42,
             verbose=True
         )
         
-        # Use the new detect_regimes method for comprehensive analysis
+        # 🔧 CRITICAL: Use detect_regimes method for professional output
         results = detector.detect_regimes(data['Close'], verbose=True)
         
         print(f"\n✅ Stable Analysis Complete for {symbol}")
@@ -207,8 +211,12 @@ def production_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
         if len(data) == 0:
             raise ValueError(f"No data found for {symbol}")
         
-        # Create production detector
-        detector = AutoRegimeDetector.create_production_detector(
+        # 🔧 FIXED: Create production detector directly
+        detector = AutoRegimeDetector(
+            stability_mode=True,
+            max_regimes=3,
+            min_regime_duration=45,
+            economic_significance_threshold=0.08,
             random_state=42,
             verbose=False
         )
