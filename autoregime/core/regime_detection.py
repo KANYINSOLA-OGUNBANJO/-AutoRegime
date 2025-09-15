@@ -957,4 +957,3 @@ class AutoRegimeDetector:
             verbose=False,
             **kwargs
         )
-Key Fixes Applied:
