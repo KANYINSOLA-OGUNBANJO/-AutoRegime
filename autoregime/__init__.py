@@ -115,30 +115,46 @@ def stable_regime_analysis(symbol, start_date='2020-01-01'):
     >>> timeline = detector.get_regime_timeline()
     >>> print(f"Detected {detector.optimal_n_regimes} stable regimes")
     """
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+    
     print(f"🔧 Stable Regime Analysis for {symbol}")
-    print("🔒 DETERMINISTIC MODE: Results guaranteed consistent")
+    print("Enhanced stability parameters active...")
     
     # CRITICAL: Set global random state for full determinism
     np.random.seed(42)
     
     loader = MarketDataLoader()
+    
+    # Add detailed loading messages
+    print(f"Loading market data for 1 assets...")
+    from datetime import datetime
+    end_date = datetime.now().strftime('%Y-%m-%d')
+    print(f"Period: {start_date} to {end_date}")
+    print(f"Assets: {symbol}")
+    print(f"  Downloading {symbol}... ")
+    
     data = loader.load_market_data([symbol], start_date=start_date)
     
-    # CORRECTED: More balanced parameters for proper regime detection
+    print("Calculating daily returns...")
+    print(f"Returns calculated for period: {data.index[0].strftime('%Y-%m-%d')} to {data.index[-1].strftime('%Y-%m-%d')}")
+    print(f"Data shape: {data.shape}")
+    
+    # CORRECTED: Enhanced stability parameters for full detailed output
     detector = AutoRegimeDetector(
-        stability_mode=False,        # FIXED: Disable overly restrictive mode
-        random_state=42,             # Deterministic results
-        min_regime_duration=12,      # FIXED: Reduced from 20 to 12 days
-        max_regimes=6,               # FIXED: Increased from 4 to 6 regimes
-        economic_significance_threshold=0.03,  # FIXED: Reduced from 0.05 to 0.03
-        verbose=True
+        stability_mode=True,             # ENABLE stability mode for full output format
+        random_state=42,                 # Deterministic results
+        min_regime_duration=30,          # Stability mode duration
+        max_regimes=4,                   # Stability mode max regimes
+        economic_significance_threshold=0.05,  # Stability mode threshold
+        verbose=True                     # Full verbose output
     )
     
     detector.fit(data)
     
     print(f"\n✅ Stable Analysis Complete for {symbol}")
     print(f"📊 Detected {detector.optimal_n_regimes} stable regimes")
-    print("🔒 DETERMINISTIC: Same input = Same output guaranteed")
+    print("🎯 Use detector.get_regime_timeline() for detailed timeline")
     
     return detector
 
