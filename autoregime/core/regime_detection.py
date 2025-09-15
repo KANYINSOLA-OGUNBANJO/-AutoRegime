@@ -13,9 +13,12 @@ import warnings
 from typing import Dict, List, Tuple, Optional, Union
 import logging
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Setup logging with proper format for verbose output
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(name)s: %(message)s'
+)
+logger = logging.getLogger('autoregime.core.regime_detection')
 
 class AutoRegimeDetector:
     """
@@ -35,16 +38,17 @@ class AutoRegimeDetector:
     - 🔧 FIXED: Corrected max drawdown calculations
     - 🔧 FIXED: Realistic regime classifications
     - 🔧 FIXED: DD-MM-YYYY date formatting
+    - 🔧 FIXED: detect_regimes method for direct usage
     
     Example:
     --------
     >>> detector = AutoRegimeDetector(random_state=42)  # Deterministic
-    >>> detector.fit(returns_data)
-    >>> timeline = detector.get_regime_timeline()
+    >>> regimes = detector.detect_regimes(price_series, verbose=True)
+    >>> print(f"Max Drawdown: {regimes['max_drawdown']:.1%}")
     
     >>> # Stable analysis mode
     >>> detector = AutoRegimeDetector(stability_mode=True)
-    >>> detector.fit(returns_data)  # More stable, longer-duration regimes
+    >>> regimes = detector.detect_regimes(price_series, verbose=True)
     """
     
     def __init__(self, 
@@ -101,6 +105,125 @@ class AutoRegimeDetector:
         
         # Store fitted data for timeline generation
         self._fitted_data = None
+
+    def detect_regimes(self, price_series: Union[pd.Series, np.ndarray], 
+                      verbose: Optional[bool] = None) -> Dict[str, any]:
+        """
+        🔧 NEW: Direct regime detection method for single price series with comprehensive results.
+        
+        This is the main method users call for regime detection analysis.
+        
+        Parameters:
+        -----------
+        price_series : pd.Series or np.ndarray
+            Price series data (closes, adjusted closes, etc.)
+        verbose : bool, optional
+            Override instance verbose setting for this call
+            
+        Returns:
+        --------
+        dict: Comprehensive regime analysis results containing:
+            - current_regime: Current regime name
+            - regime_confidence: Confidence level (0-1)
+            - max_drawdown: Maximum drawdown (negative decimal)
+            - total_return: Total return over period
+            - annual_return: Annualized return
+            - annual_volatility: Annualized volatility
+            - sharpe_ratio: Risk-adjusted return measure
+            - regime_timeline: DataFrame with detailed regime periods
+            - regime_summary: Dictionary with regime characteristics
+        """
+        # Use provided verbose setting or instance default
+        use_verbose = verbose if verbose is not None else self.verbose
+        
+        if use_verbose:
+            logger.info("Loading data...")
+        
+        # Convert to pandas Series if needed
+        if isinstance(price_series, np.ndarray):
+            if use_verbose:
+                logger.info("Converting numpy array to pandas Series with date index")
+            price_series = pd.Series(
+                price_series, 
+                index=pd.date_range(start='2020-01-01', periods=len(price_series), freq='D')
+            )
+        elif not isinstance(price_series.index, pd.DatetimeIndex):
+            if use_verbose:
+                logger.info("Converting index to datetime format")
+            price_series.index = pd.date_range(start='2020-01-01', periods=len(price_series), freq='D')
+        
+        if use_verbose:
+            logger.info(f"Data loaded: {len(price_series)} observations from {price_series.index[0].strftime('%d-%m-%Y')} to {price_series.index[-1].strftime('%d-%m-%Y')}")
+        
+        # Calculate returns
+        returns = price_series.pct_change().dropna()
+        
+        # Create returns DataFrame (required by fit method)
+        returns_df = pd.DataFrame({'asset': returns})
+        
+        if use_verbose:
+            logger.info("Calculating market statistics...")
+        
+        # Calculate comprehensive metrics
+        total_return = (price_series.iloc[-1] / price_series.iloc[0]) - 1
+        annual_return = (1 + total_return) ** (252 / len(returns)) - 1
+        annual_volatility = returns.std() * np.sqrt(252)
+        
+        # Safe Sharpe ratio calculation
+        if annual_volatility > 1e-10:
+            sharpe_ratio = annual_return / annual_volatility
+        else:
+            sharpe_ratio = 0.0
+        
+        # 🔧 FIXED: Use corrected max drawdown calculation
+        max_drawdown = self._calculate_max_drawdown_corrected(returns)
+        
+        if use_verbose:
+            logger.info(f"Market metrics calculated - Total Return: {total_return:.1%}, Max Drawdown: {max_drawdown:.1%}")
+        
+        # Fit the regime detection model
+        if use_verbose:
+            logger.info("Fitting Hidden Markov Model for regime detection...")
+        
+        # Set verbose for fit method
+        original_verbose = self.verbose
+        self.verbose = use_verbose
+        
+        try:
+            self.fit(returns_df)
+        finally:
+            # Restore original verbose setting
+            self.verbose = original_verbose
+        
+        # Get current regime prediction
+        if use_verbose:
+            logger.info("Predicting current market regime...")
+            
+        current_regime_id, regime_confidence = self.predict_current_regime(returns_df.tail(21))
+        current_regime_name = self.regime_names.get(current_regime_id, f'Regime {current_regime_id}')
+        
+        # Get regime timeline
+        regime_timeline = self.get_regime_timeline(returns_df)
+        
+        if use_verbose:
+            logger.info(f"Analysis complete - Current regime: {current_regime_name} (confidence: {regime_confidence:.1%})")
+        
+        # Return comprehensive results
+        results = {
+            'current_regime': current_regime_name,
+            'regime_confidence': regime_confidence,
+            'max_drawdown': max_drawdown,
+            'total_return': total_return,
+            'annual_return': annual_return,
+            'annual_volatility': annual_volatility,
+            'sharpe_ratio': sharpe_ratio,
+            'regime_timeline': regime_timeline,
+            'regime_summary': self.get_regime_summary(),
+            'n_regimes': self.optimal_n_regimes,
+            'regime_characteristics': self.regime_characteristics
+        }
+        
+        return results
         
     def fit(self, returns_data: pd.DataFrame, 
             feature_columns: Optional[List[str]] = None) -> 'AutoRegimeDetector':
@@ -119,7 +242,8 @@ class AutoRegimeDetector:
         self : AutoRegimeDetector
             Fitted detector instance with consistent results guaranteed
         """
-        logger.info("Starting AutoRegime detection...")
+        if self.verbose:
+            logger.info("Starting AutoRegime detection...")
         
         # 🔧 CRITICAL: Set global random state for full determinism
         np.random.seed(self.random_state)
@@ -139,7 +263,8 @@ class AutoRegimeDetector:
         )
         
         # Log the optimal regime count discovered
-        logger.info(f"Optimal regime count discovered: {self.optimal_n_regimes}")
+        if self.verbose:
+            logger.info(f"Optimal regime count discovered: {self.optimal_n_regimes}")
         
         # Analyze regime characteristics
         self._analyze_regime_characteristics(returns_data, features)
@@ -152,7 +277,8 @@ class AutoRegimeDetector:
             # Show detailed timeline with exact dates
             self.print_detailed_timeline(returns_data)
             
-        logger.info("AutoRegime detection completed successfully!")
+        if self.verbose:
+            logger.info("AutoRegime detection completed successfully!")
         return self
     
     def _validate_input_data(self, data: pd.DataFrame) -> None:
@@ -161,10 +287,12 @@ class AutoRegimeDetector:
             raise ValueError("Need at least 100 observations for reliable regime detection")
         
         if data.isnull().sum().sum() > len(data) * 0.1:
-            logger.warning("High percentage of missing values detected")
+            if self.verbose:
+                logger.warning("High percentage of missing values detected")
             
         if not isinstance(data.index, pd.DatetimeIndex):
-            logger.warning("Index is not datetime - consider converting for better results")
+            if self.verbose:
+                logger.warning("Index is not datetime - consider converting for better results")
     
     def _prepare_features(self, returns_data: pd.DataFrame, 
                          feature_columns: Optional[List[str]] = None) -> np.ndarray:
@@ -257,7 +385,8 @@ class AutoRegimeDetector:
         
         This is the core innovation that makes AutoRegime special.
         """
-        logger.info("Auto-discovering optimal regime count...")
+        if self.verbose:
+            logger.info("Auto-discovering optimal regime count...")
         
         best_model = None
         best_score = np.inf
@@ -287,7 +416,8 @@ class AutoRegimeDetector:
                     best_n_regimes = n_regimes
                     
             except Exception as e:
-                logger.warning(f"Failed to fit model with {n_regimes} regimes: {e}")
+                if self.verbose:
+                    logger.warning(f"Failed to fit model with {n_regimes} regimes: {e}")
                 continue
         
         if best_model is None:
@@ -320,6 +450,9 @@ class AutoRegimeDetector:
         deterministic_seeds = [42, 123, 456, 789, 999]  # Fixed seeds for reproducibility
         
         for attempt, seed in enumerate(deterministic_seeds):
+            if self.verbose and attempt == 0:
+                logger.info(f"Fitting HMM with deterministic seed: {seed}")
+                
             try:
                 # CRITICAL: Set global numpy random state for full determinism
                 np.random.seed(seed)
@@ -574,13 +707,15 @@ class AutoRegimeDetector:
             
             # Additional validation: extreme values check
             if max_drawdown < -1.0:  # More than 100% loss is impossible
-                logger.warning(f"Extreme drawdown detected: {max_drawdown:.1%}, capping at -99%")
+                if self.verbose:
+                    logger.warning(f"Extreme drawdown detected: {max_drawdown:.1%}, capping at -99%")
                 max_drawdown = -0.99
                 
             return max_drawdown
             
         except Exception as e:
-            logger.warning(f"Error calculating max drawdown: {e}")
+            if self.verbose:
+                logger.warning(f"Error calculating max drawdown: {e}")
             return 0.0
     
     def _generate_regime_names(self) -> None:
@@ -903,10 +1038,12 @@ class AutoRegimeDetector:
             'stability_mode': self.stability_mode,
             'deterministic': True,  # Always true now
             'fixes_applied': [
+                'Added detect_regimes method for direct usage',
                 'Corrected max drawdown calculation',
                 'Deterministic HMM fitting',
                 'Realistic regime classification thresholds',
-                'DD-MM-YYYY date formatting'
+                'DD-MM-YYYY date formatting',
+                'Proper verbose logging format'
             ]
         }
 
