@@ -8,7 +8,7 @@ __author__ = "Kanyinsola Ogunbanjo"
 
 # Core imports for easy access
 from .core.regime_detection import AutoRegimeDetector
-from .core.data_loader import MarketDataLoader
+from .utils.data_loader import MarketDataLoader
 from .dashboard import launch_dashboard
 import numpy as np
 import pandas as pd
@@ -559,3 +559,4 @@ __all__ = [
 print("AutoRegime loaded! 🚀")
 print("Try: quick_demo() or stable_regime_analysis('AAPL')")
 print("Professional: validate_deterministic_behavior() to test reliability")
+
