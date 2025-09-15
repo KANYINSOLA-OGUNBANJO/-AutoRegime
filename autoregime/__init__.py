@@ -90,80 +90,88 @@ def quick_analysis(symbols, start_date='2023-01-01'):
         print(f"Analysis error: {str(e)}")
         return None
 
-def stable_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
+def stable_regime_analysis(ticker, start_date=None, end_date=None):
     """
-    🔧 CORRECTED: Professional stable regime analysis with detect_regimes method.
+    🔧 CORRECTED: Professional stable regime analysis with fit method and stability_mode=True.
     
-    This function provides more robust regime detection by using stability-enhanced
-    parameters that reduce noise and produce longer-duration, more meaningful regimes.
+    This function provides comprehensive regime detection using the corrected fit() method
+    with stability_mode=True to ensure professional-grade output with INFO logging,
+    detailed timeline, current market status, and corrected maximum drawdown calculation.
     
     Parameters:
     -----------
-    symbol : str
-        Stock symbol (e.g., 'AAPL', 'SPY', 'TSLA')
-    start_date : str, default='2020-01-01'
-        Start date for analysis in 'YYYY-MM-DD' format
+    ticker : str
+        Stock ticker symbol (e.g., 'AAPL', 'NVDA', 'SPY')
+    start_date : str, optional
+        Start date in 'YYYY-MM-DD' format (defaults to 1 year ago)
     end_date : str, optional
-        End date for analysis (defaults to today)
+        End date in 'YYYY-MM-DD' format (defaults to today)
         
     Returns:
     --------
-    detector : AutoRegimeDetector
-        Fitted detector with stable parameters and regime analysis results
+    dict : Complete professional analysis results with timeline and statistics
         
     Example:
     --------
     >>> import autoregime
-    >>> detector = autoregime.stable_regime_analysis('NVDA', start_date='2023-01-01')
-    >>> # Automatically shows detailed output with corrected max drawdown
+    >>> result = autoregime.stable_regime_analysis('NVDA')
+    >>> # Automatically displays professional INFO logging output
     """
     import yfinance as yf
-    from datetime import datetime
+    from datetime import datetime, timedelta
+    import logging
     
-    # Set end date to today if not provided
+    # Configure logging for professional output
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+    
+    # Set default dates if not provided
     if end_date is None:
         end_date = datetime.now().strftime('%Y-%m-%d')
-    
-    print(f"🔧 AUTOREGIME STABLE ANALYSIS: {symbol}")
-    print(f"📅 Period: {start_date} to {end_date}")
-    print(f"🎯 Enhanced stability parameters active")
-    print("=" * 60)
-    
-    # CRITICAL: Set global random state for full determinism
-    np.random.seed(42)
+    if start_date is None:
+        start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
     
     try:
-        # Download data using yfinance directly
-        print(f"Loading market data for {symbol}...")
-        data = yf.download(symbol, start=start_date, end=end_date, progress=False)
+        # Download stock data
+        stock = yf.Ticker(ticker)
+        data = stock.history(start=start_date, end=end_date)
         
-        if len(data) == 0:
-            raise ValueError(f"No data found for {symbol} in specified period")
+        if data.empty:
+            logging.error(f"No data available for ticker {ticker}")
+            return {"error": f"No data available for ticker {ticker}"}
         
-        print(f"Data loaded: {len(data)} observations from {data.index[0].strftime('%d-%m-%Y')} to {data.index[-1].strftime('%d-%m-%Y')}")
+        logging.info(f"Starting comprehensive regime analysis for {ticker.upper()}")
+        logging.info(f"Data period: {data.index[0].strftime('%d-%m-%Y')} to {data.index[-1].strftime('%d-%m-%Y')}")
+        logging.info(f"Total trading days analyzed: {len(data)}")
         
-        # 🔧 FIXED: Create detector directly (no missing create_stable_detector method)
-        detector = AutoRegimeDetector(
-            stability_mode=False,  # Disabled to prevent over-restriction
-            max_regimes=6,         # Increased to allow more regimes
-            min_regime_duration=15, # Reduced to be less restrictive
-            economic_significance_threshold=0.025,  # Reduced for sensitivity
-            random_state=42,
-            verbose=True
-        )
+        # 🔧 CRITICAL FIX: Use fit() method with stability_mode=True for professional output
+        detector = AutoRegimeDetector(n_regimes=4)
+        result = detector.fit(data['Close'], stability_mode=True)
         
-        # 🔧 CRITICAL: Use detect_regimes method for professional output
-        results = detector.detect_regimes(data['Close'], verbose=True)
+        # Enhanced result with professional metadata
+        result.update({
+            'ticker': ticker.upper(),
+            'analysis_type': 'Comprehensive Stable Regime Analysis',
+            'data_start': data.index[0].strftime('%d-%m-%Y'),
+            'data_end': data.index[-1].strftime('%d-%m-%Y'),
+            'total_trading_days': len(data),
+            'analysis_timestamp': datetime.now().strftime('%d-%m-%Y %H:%M:%S'),
+            'model_configuration': {
+                'n_regimes': 4,
+                'stability_mode': True,
+                'deterministic_fitting': True
+            }
+        })
         
-        print(f"\n✅ Stable Analysis Complete for {symbol}")
-        print(f"📊 Detected {detector.optimal_n_regimes} stable regimes")
-        print("🎯 Use detector.get_regime_timeline() for detailed timeline")
+        logging.info("="*60)
+        logging.info("ANALYSIS COMPLETED SUCCESSFULLY")
+        logging.info("="*60)
         
-        return detector
+        return result
         
     except Exception as e:
-        print(f"❌ Error analyzing {symbol}: {e}")
-        return None
+        error_msg = f"Stable regime analysis failed for {ticker}: {str(e)}"
+        logging.error(error_msg)
+        return {"error": error_msg}
 
 def production_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
     """
