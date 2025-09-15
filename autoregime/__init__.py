@@ -90,9 +90,9 @@ def quick_analysis(symbols, start_date='2023-01-01'):
         print(f"Analysis error: {str(e)}")
         return None
 
-def stable_regime_analysis(symbol, start_date='2020-01-01'):
+def stable_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
     """
-    Perform stable regime analysis with enhanced parameters for consistent results.
+    🔧 UPDATED: One-line stable regime analysis with yfinance integration.
     
     This function provides more robust regime detection by using stability-enhanced
     parameters that reduce noise and produce longer-duration, more meaningful regimes.
@@ -103,6 +103,8 @@ def stable_regime_analysis(symbol, start_date='2020-01-01'):
         Stock symbol (e.g., 'AAPL', 'SPY', 'TSLA')
     start_date : str, default='2020-01-01'
         Start date for analysis in 'YYYY-MM-DD' format
+    end_date : str, optional
+        End date for analysis (defaults to today)
         
     Returns:
     --------
@@ -111,56 +113,57 @@ def stable_regime_analysis(symbol, start_date='2020-01-01'):
         
     Example:
     --------
-    >>> detector = stable_regime_analysis('AAPL')
-    >>> timeline = detector.get_regime_timeline()
-    >>> print(f"Detected {detector.optimal_n_regimes} stable regimes")
+    >>> import autoregime
+    >>> detector = autoregime.stable_regime_analysis('NVDA', start_date='2023-01-01')
+    >>> # Automatically shows detailed output with corrected max drawdown
     """
-    import logging
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+    import yfinance as yf
+    from datetime import datetime
     
-    print(f"🔧 Stable Regime Analysis for {symbol}")
-    print("Enhanced stability parameters active...")
+    # Set end date to today if not provided
+    if end_date is None:
+        end_date = datetime.now().strftime('%Y-%m-%d')
+    
+    print(f"🔧 AUTOREGIME STABLE ANALYSIS: {symbol}")
+    print(f"📅 Period: {start_date} to {end_date}")
+    print(f"🎯 Enhanced stability parameters active")
+    print("=" * 60)
     
     # CRITICAL: Set global random state for full determinism
     np.random.seed(42)
     
-    loader = MarketDataLoader()
-    
-    # Add detailed loading messages
-    print(f"Loading market data for 1 assets...")
-    from datetime import datetime
-    end_date = datetime.now().strftime('%Y-%m-%d')
-    print(f"Period: {start_date} to {end_date}")
-    print(f"Assets: {symbol}")
-    print(f"  Downloading {symbol}... ")
-    
-    data = loader.load_market_data([symbol], start_date=start_date)
-    
-    print("Calculating daily returns...")
-    print(f"Returns calculated for period: {data.index[0].strftime('%Y-%m-%d')} to {data.index[-1].strftime('%Y-%m-%d')}")
-    print(f"Data shape: {data.shape}")
-    
-    # CORRECTED: Enhanced stability parameters for full detailed output
-    detector = AutoRegimeDetector(
-        stability_mode=True,             # ENABLE stability mode for full output format
-        random_state=42,                 # Deterministic results
-        min_regime_duration=30,          # Stability mode duration
-        max_regimes=4,                   # Stability mode max regimes
-        economic_significance_threshold=0.05,  # Stability mode threshold
-        verbose=True                     # Full verbose output
-    )
-    
-    detector.fit(data)
-    
-    print(f"\n✅ Stable Analysis Complete for {symbol}")
-    print(f"📊 Detected {detector.optimal_n_regimes} stable regimes")
-    print("🎯 Use detector.get_regime_timeline() for detailed timeline")
-    
-    return detector
+    try:
+        # Download data using yfinance directly (compatible with corrected detect_regimes method)
+        print(f"Loading market data for {symbol}...")
+        data = yf.download(symbol, start=start_date, end=end_date, progress=False)
+        
+        if len(data) == 0:
+            raise ValueError(f"No data found for {symbol} in specified period")
+        
+        print(f"Data loaded: {len(data)} observations from {data.index[0].strftime('%d-%m-%Y')} to {data.index[-1].strftime('%d-%m-%Y')}")
+        
+        # Create stable detector with enhanced parameters
+        detector = AutoRegimeDetector.create_stable_detector(
+            random_state=42,
+            verbose=True
+        )
+        
+        # Use the new detect_regimes method for comprehensive analysis
+        results = detector.detect_regimes(data['Close'], verbose=True)
+        
+        print(f"\n✅ Stable Analysis Complete for {symbol}")
+        print(f"📊 Detected {detector.optimal_n_regimes} stable regimes")
+        print("🎯 Use detector.get_regime_timeline() for detailed timeline")
+        
+        return detector
+        
+    except Exception as e:
+        print(f"❌ Error analyzing {symbol}: {e}")
+        return None
 
-def production_regime_analysis(symbol, start_date='2020-01-01'):
+def production_regime_analysis(symbol, start_date='2020-01-01', end_date=None):
     """
-    Production-ready regime analysis optimized for maximum stability and reliability.
+    🔧 UPDATED: Production-ready regime analysis with yfinance integration.
     
     This function uses the most conservative parameters for production environments
     where consistent, reliable regime detection is critical. Ideal for automated
@@ -172,44 +175,71 @@ def production_regime_analysis(symbol, start_date='2020-01-01'):
         Stock symbol (e.g., 'AAPL', 'SPY', 'TSLA')
     start_date : str, default='2020-01-01'
         Start date for analysis in 'YYYY-MM-DD' format
+    end_date : str, optional
+        End date for analysis (defaults to today)
         
     Returns:
     --------
-    detector : AutoRegimeDetector
-        Fitted detector with production-grade stability parameters
+    dict : Production results with key metrics
         
     Example:
     --------
-    >>> detector = production_regime_analysis('SPY')
-    >>> current_regime, confidence = detector.predict_current_regime(recent_data)
-    >>> print(f"Production regime: {detector.regime_names[current_regime]}")
+    >>> import autoregime
+    >>> results = autoregime.production_regime_analysis('SPY')
+    >>> print(f"Current regime: {results['current_regime']}")
     """
+    import yfinance as yf
+    from datetime import datetime
+    
+    if end_date is None:
+        end_date = datetime.now().strftime('%Y-%m-%d')
+    
     print(f"🏭 Production Regime Analysis for {symbol}")
     print("🔒 Maximum stability parameters active...")
     
     # CRITICAL: Set deterministic state
     np.random.seed(42)
     
-    loader = MarketDataLoader()
-    data = loader.load_market_data([symbol], start_date=start_date)
-    
-    # CORRECTED: Production-grade parameters with proper balance
-    detector = AutoRegimeDetector(
-        stability_mode=False,        # FIXED: Disable overly restrictive mode
-        random_state=42,             # Deterministic results
-        min_regime_duration=20,      # Stable regimes (20+ days)
-        max_regimes=5,               # FIXED: Increased from 3 to 5 regimes
-        economic_significance_threshold=0.04,  # FIXED: Reduced from 0.08 to 0.04
-        verbose=False                # Clean output for production
-    )
-    
-    detector.fit(data)
-    
-    print(f"📊 Production Analysis Complete for {symbol}")
-    print(f"🎯 Regimes Detected: {detector.optimal_n_regimes}")
-    print(f"⚡ Model ready for production use")
-    
-    return detector
+    try:
+        # Download data
+        data = yf.download(symbol, start=start_date, end=end_date, progress=False)
+        
+        if len(data) == 0:
+            raise ValueError(f"No data found for {symbol}")
+        
+        # Create production detector
+        detector = AutoRegimeDetector.create_production_detector(
+            random_state=42,
+            verbose=False
+        )
+        
+        # Use detect_regimes method
+        results = detector.detect_regimes(data['Close'], verbose=False)
+        
+        print(f"📊 Production Analysis Complete for {symbol}")
+        print(f"🎯 Current Regime: {results['current_regime']}")
+        print(f"⚡ Model ready for production use")
+        
+        # Return production-focused results
+        production_results = {
+            'symbol': symbol,
+            'current_regime': results['current_regime'],
+            'regime_confidence': results['regime_confidence'],
+            'max_drawdown': results['max_drawdown'],
+            'annual_return': results['annual_return'],
+            'annual_volatility': results['annual_volatility'],
+            'sharpe_ratio': results['sharpe_ratio'],
+            'n_regimes': results['n_regimes'],
+            'detector': detector,
+            'analysis_date': datetime.now().strftime('%Y-%m-%d'),
+            'data_period': f"{start_date} to {end_date}"
+        }
+        
+        return production_results
+        
+    except Exception as e:
+        print(f"❌ Production analysis error for {symbol}: {e}")
+        return None
 
 def reliable_regime_analysis(symbol, start_date='2020-01-01'):
     """
@@ -239,19 +269,16 @@ def reliable_regime_analysis(symbol, start_date='2020-01-01'):
     """
     print(f"🔒 Reliable Analysis for {symbol} (Always same result)")
     
-    detector = production_regime_analysis(symbol, start_date)
+    result = production_regime_analysis(symbol, start_date)
     
-    # Get current regime for display but return detector object
-    timeline = detector.get_regime_timeline()
-    if len(timeline) > 0:
-        current_regime_name = timeline.iloc[-1]['Regime_Name']
-        print(f"✅ {symbol} Current Regime: {current_regime_name}")
-        print(f"📊 Total Regimes Detected: {detector.optimal_n_regimes}")
+    if result and 'detector' in result:
+        detector = result['detector']
+        print(f"✅ {symbol} Current Regime: {result['current_regime']}")
+        print(f"📊 Total Regimes Detected: {result['n_regimes']}")
+        return detector
     else:
         print("No regime detected")
-    
-    # FIXED: Return detector object, not string
-    return detector
+        return None
 
 def multi_asset_analysis(symbols, start_date='2020-01-01', mode='stable'):
     """
@@ -288,7 +315,7 @@ def multi_asset_analysis(symbols, start_date='2020-01-01', mode='stable'):
     if mode == 'stable':
         analysis_func = stable_regime_analysis
     elif mode == 'production':
-        analysis_func = production_regime_analysis
+        analysis_func = lambda symbol, start_date: production_regime_analysis(symbol, start_date).get('detector') if production_regime_analysis(symbol, start_date) else None
     elif mode == 'reliable':
         analysis_func = reliable_regime_analysis
     else:
@@ -318,35 +345,29 @@ def demonstrate_autoregime_sensitivity():
     print("="*60)
     print("This demonstrates expected behavior for professional regime detection:")
     
-    loader = MarketDataLoader()
-    
     # Test 1: Same period, same seed = identical results (REPRODUCIBILITY)
     print("\n🔬 REPRODUCIBILITY TEST")
     print("="*50)
-    data1 = loader.load_market_data(['AAPL'], start_date='2023-01-01')
     
-    detector_a = AutoRegimeDetector(random_state=42, verbose=False)
-    detector_b = AutoRegimeDetector(random_state=42, verbose=False)
+    detector_a = stable_regime_analysis('AAPL', start_date='2023-01-01')
+    detector_b = stable_regime_analysis('AAPL', start_date='2023-01-01')
     
-    detector_a.fit(data1)
-    detector_b.fit(data1)
-    
-    print(f"Run A: {detector_a.optimal_n_regimes} regimes")
-    print(f"Run B: {detector_b.optimal_n_regimes} regimes")
-    reproducible = detector_a.optimal_n_regimes == detector_b.optimal_n_regimes
+    print(f"Run A: {detector_a.optimal_n_regimes if detector_a else 0} regimes")
+    print(f"Run B: {detector_b.optimal_n_regimes if detector_b else 0} regimes")
+    reproducible = (detector_a and detector_b and 
+                   detector_a.optimal_n_regimes == detector_b.optimal_n_regimes)
     print(f"✅ Same period + same seed = identical results: {reproducible}")
     
     # Test 2: Different periods = different results (EXPECTED SENSITIVITY)
     print(f"\n🔬 SENSITIVITY TEST")
     print("="*50)
-    data2 = loader.load_market_data(['AAPL'], start_date='2023-01-03')
     
-    detector_c = AutoRegimeDetector(random_state=42, verbose=False)
-    detector_c.fit(data2)
+    detector_c = stable_regime_analysis('AAPL', start_date='2023-01-03')
     
-    print(f"Period 2023-01-01: {detector_a.optimal_n_regimes} regimes")
-    print(f"Period 2023-01-03: {detector_c.optimal_n_regimes} regimes")
-    sensitive = detector_a.optimal_n_regimes != detector_c.optimal_n_regimes
+    print(f"Period 2023-01-01: {detector_a.optimal_n_regimes if detector_a else 0} regimes")
+    print(f"Period 2023-01-03: {detector_c.optimal_n_regimes if detector_c else 0} regimes")
+    sensitive = (detector_a and detector_c and 
+                detector_a.optimal_n_regimes != detector_c.optimal_n_regimes)
     print(f"✅ Different periods = different regimes (expected): {sensitive}")
     
     print(f"\n🎯 CONCLUSION:")
@@ -364,79 +385,50 @@ def demonstrate_autoregime_sensitivity():
 
 def full_historical_analysis():
     """
-    Comprehensive historical analysis demonstrating AutoRegime capabilities.
+    🔧 UPDATED: Comprehensive historical analysis with yfinance integration.
     """
     print("🔍 COMPREHENSIVE HISTORICAL ANALYSIS")
     print("="*60)
     print("Analyzing major market events and regime transitions...")
     
     try:
-        # Load comprehensive historical data
-        loader = MarketDataLoader()
-        symbols = ['SPY', 'QQQ', 'AAPL', 'TSLA', 'NVDA']
+        import yfinance as yf
         
-        print(f"📊 Loading data for: {', '.join(symbols)}")
-        data = loader.load_market_data(symbols, start_date='2018-01-01')
+        # Use SPY for comprehensive historical analysis
+        symbol = 'SPY'
+        start_date = '2018-01-01'
         
-        # CORRECTED: Comprehensive analysis with balanced parameters
+        print(f"📊 Loading historical data for: {symbol}")
+        data = yf.download(symbol, start=start_date, progress=False)
+        
+        if len(data) == 0:
+            raise ValueError(f"No data found for {symbol}")
+        
+        # Comprehensive analysis with balanced parameters
         detector = AutoRegimeDetector(
-            max_regimes=8,                    # Allow more regimes for long history
-            min_regime_duration=15,           # Moderate duration requirement
-            economic_significance_threshold=0.025,  # FIXED: Reduced from 0.03 to 0.025
-            stability_mode=False,             # FIXED: Disable restrictive mode
-            random_state=42,                  # Reproducible results
+            max_regimes=8,
+            min_regime_duration=15,
+            economic_significance_threshold=0.025,
+            stability_mode=False,
+            random_state=42,
             verbose=True
         )
         
         print("\n🚀 Running comprehensive regime detection...")
-        detector.fit(data)
+        results = detector.detect_regimes(data['Close'], verbose=True)
         
         print(f"\n✅ ANALYSIS COMPLETE")
         print(f"📈 Optimal Regimes Detected: {detector.optimal_n_regimes}")
         
-        # Get detailed timeline
-        timeline = detector.get_regime_timeline()
-        
-        print(f"\n📋 REGIME TIMELINE SUMMARY")
-        print("="*50)
-        for idx, regime in timeline.iterrows():
-            print(f"Regime {regime['Regime_ID']}: {regime['Start_Date']} to {regime['End_Date']}")
-            print(f"  Duration: {regime['Duration_Days']} days")
-            print(f"  Name: {regime['Regime_Name']}")
-            print()
-        
-        # Performance metrics
-        metrics = detector.get_performance_metrics()
-        if metrics is not None:
-            print("📊 PERFORMANCE SUMMARY")
-            print("="*30)
-            for metric, value in metrics.items():
-                if isinstance(value, (int, float)):
-                    print(f"{metric}: {value:.3f}")
-                else:
-                    print(f"{metric}: {value}")
-        
-        return detector, timeline, metrics
+        return detector, results
         
     except Exception as e:
         print(f"Error in historical analysis: {e}")
-        return None, None, None
+        return None, None
 
 def batch_regime_analysis(symbols, period="1y"):
     """
-    Analyze multiple symbols for regime detection.
-    
-    Parameters:
-    -----------
-    symbols : list
-        List of ticker symbols
-    period : str
-        Analysis period (default: '1y')
-        
-    Returns:
-    --------
-    dict
-        Batch analysis results with detector objects
+    🔧 UPDATED: Batch analysis with yfinance integration.
     """
     results = {}
     
@@ -485,9 +477,13 @@ def validate_deterministic_behavior(symbol='NVDA', runs=3):
         print(f"Run {i+1}/{runs}...")
         detector = stable_regime_analysis(symbol, start_date='2023-01-01')
         
-        timeline = detector.get_regime_timeline()
-        current_regime = timeline.iloc[-1]['Regime_Name'] if len(timeline) > 0 else "None"
-        n_regimes = detector.optimal_n_regimes
+        if detector:
+            timeline = detector.get_regime_timeline()
+            current_regime = timeline.iloc[-1]['Regime_Name'] if len(timeline) > 0 else "None"
+            n_regimes = detector.optimal_n_regimes
+        else:
+            current_regime = "Error"
+            n_regimes = 0
         
         results.append({
             'run': i+1,
