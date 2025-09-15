@@ -77,7 +77,9 @@ class AutoRegimeDetector:
             self.max_regimes = min(max_regimes, 4)  # Cap at 4 regimes
             self.min_regime_duration = max(min_regime_duration, 30)  # Min 30 days
             self.economic_threshold = max(economic_significance_threshold, 0.05)  # 5% threshold
-            print("🔧 Stability Mode Active: Enhanced parameters for robust regime detection")
+            if verbose:
+                print("🔧 Stability Mode Active: Enhanced parameters for robust regime detection")
+                print(f"🔧 Stability parameters: max_regimes={self.max_regimes}, min_duration={self.min_regime_duration}, threshold={self.economic_threshold:.1%}")
         else:
             self.max_regimes = max_regimes
             self.min_regime_duration = min_regime_duration
@@ -117,10 +119,7 @@ class AutoRegimeDetector:
         self : AutoRegimeDetector
             Fitted detector instance with consistent results guaranteed
         """
-        logger.info("🔒 Starting DETERMINISTIC AutoRegime detection...")
-        
-        if self.stability_mode and self.verbose:
-            print(f"🔧 Stability parameters: max_regimes={self.max_regimes}, min_duration={self.min_regime_duration}, threshold={self.economic_threshold:.1%}")
+        logger.info("Starting AutoRegime detection...")
         
         # 🔧 CRITICAL: Set global random state for full determinism
         np.random.seed(self.random_state)
@@ -139,6 +138,9 @@ class AutoRegimeDetector:
             features, returns_data
         )
         
+        # Log the optimal regime count discovered
+        logger.info(f"Optimal regime count discovered: {self.optimal_n_regimes}")
+        
         # Analyze regime characteristics
         self._analyze_regime_characteristics(returns_data, features)
         
@@ -150,7 +152,7 @@ class AutoRegimeDetector:
             # Show detailed timeline with exact dates
             self.print_detailed_timeline(returns_data)
             
-        logger.info("✅ AutoRegime detection completed successfully with deterministic results!")
+        logger.info("AutoRegime detection completed successfully!")
         return self
     
     def _validate_input_data(self, data: pd.DataFrame) -> None:
@@ -255,7 +257,7 @@ class AutoRegimeDetector:
         
         This is the core innovation that makes AutoRegime special.
         """
-        logger.info("🔍 Auto-discovering optimal regime count with deterministic method...")
+        logger.info("Auto-discovering optimal regime count...")
         
         best_model = None
         best_score = np.inf
@@ -263,7 +265,7 @@ class AutoRegimeDetector:
         
         for n_regimes in range(2, self.max_regimes + 1):
             if self.verbose:
-                print(f"🧪 Testing {n_regimes} regimes...")
+                print(f"Testing {n_regimes} regimes...")
             
             try:
                 # Fit HMM with current regime count
@@ -291,7 +293,6 @@ class AutoRegimeDetector:
         if best_model is None:
             raise ValueError("Failed to fit any regime model")
         
-        logger.info(f"🎯 Optimal regime count discovered: {best_n_regimes}")
         return best_model, best_n_regimes
     
     def _fit_hmm_model(self, features: np.ndarray, n_regimes: int) -> hmm.GaussianHMM:
@@ -307,9 +308,6 @@ class AutoRegimeDetector:
         - Enhanced convergence criteria for stability mode
         - Global numpy random state management
         """
-        if self.verbose:
-            print(f"🔒 DETERMINISTIC MODE: Fitting {n_regimes} regimes with guaranteed consistency...")
-        
         # PROFESSIONAL FIX: Multiple deterministic attempts for stability
         best_model = None
         best_score = -np.inf
@@ -362,22 +360,12 @@ class AutoRegimeDetector:
                 if score > best_score:
                     best_score = score
                     best_model = model
-                    if self.verbose:
-                        print(f"   Attempt {attempt + 1}: New best score = {score:.3f}")
-                elif self.verbose:
-                    print(f"   Attempt {attempt + 1}: Score = {score:.3f}")
                     
             except Exception as e:
-                if self.verbose:
-                    print(f"   Attempt {attempt + 1}: Failed with seed {seed} - {e}")
                 continue
         
         if best_model is None:
             raise ValueError(f"Failed to fit any HMM model with {n_regimes} regimes using deterministic initialization")
-        
-        if self.verbose:
-            print(f"✅ Best model selected with score: {best_score:.3f}")
-            print("🔒 DETERMINISTIC: Same input will always produce same output")
         
         return best_model
     
@@ -674,7 +662,6 @@ class AutoRegimeDetector:
         print("AUTOREGIME ANALYSIS SUMMARY")
         if self.stability_mode:
             print("🔧 STABILITY MODE ACTIVE")
-        print("🔒 DETERMINISTIC MODE ACTIVE")
         print("="*60)
         
         print(f"Optimal number of regimes: {self.optimal_n_regimes}")
@@ -799,7 +786,6 @@ class AutoRegimeDetector:
         print("For research and analysis purposes only.")
         if self.stability_mode:
             print("🔧 Enhanced stability parameters active")
-        print("🔒 DETERMINISTIC MODE: Results guaranteed consistent")
         print("="*80)
         
         for idx, period in timeline.iterrows():
