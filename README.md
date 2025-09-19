@@ -1,261 +1,180 @@
-# 🚀 AutoRegime: AI-Powered Market Regime Detection
+AutoRegime — Automatic Market Regime Detection
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+One-line API. Professional timeline reports. Stability-first defaults.
+Sector-aware labels: Goldilocks, Bull Market, Sideways, Risk-Off, Crisis.
+Optional online engine: BOCPD (Bayesian Online Change-Point Detection).
 
-**AutoRegime** is the first **one-line market regime detection library** that automatically identifies Bull, Bear, Crisis, and Goldilocks market conditions using optimized Hidden Markov Models.
+⚠️ Disclaimer
+AutoRegime is for research/education. It’s not investment advice. Markets involve risk.
 
-## ⚠️ Important Disclaimer
+✨ Why AutoRegime
 
-**This tool is for research and analysis purposes only. Past performance does not guarantee future results. This is not financial advice. Consult qualified financial professionals for investment decisions.**
+One-liner output: get a professional report in a single call.
 
-## 🛡️ Reliability Guarantee
+Stability-first: fewer, cleaner segments (min-length, tail suppression, period cap).
 
-```python
-# Always get the same result
-from autoregime import AutoRegimeDetector
-detector = AutoRegimeDetector(random_state=42)  # Deterministic mode
+Event-aware labeling: prevents “Goldilocks” during deep drawdowns and separates short shocks from durable trends.
 
-# Or use reliable wrapper
-import autoregime
-result = autoregime.reliable_regime_analysis('SPY')  # Same result every time
-Problem Solved: Eliminated HMM non-deterministic behavior for production use.
+Sector presets: AI/Tech, Large-Cap Tech, Rates, etc., with realistic thresholds.
 
-✨ Key Features
-🤖 One-Line API: autoregime.quick_analysis('SPY') - Complete regime detection
-🎯 Human-Readable Results: "Bull Market" vs cryptic numbers (0, 1, 2...)
-🔧 Auto-Optimization: Discovers optimal regime count automatically
-📊 25+ Years Validated: Tested from 1995 to present
-🛡️ Production-Ready: Deterministic, reliable results for live trading
-📈 Rich Analytics: Sharpe ratios, drawdowns, confidence scores
-🌐 Interactive Dashboard: Real-time regime monitoring
-⚡ 30+ Lines → 1 Line: Eliminates complex HMM setup
+Deterministic: no random seeds needed; same inputs → same outputs.
+
+Two engines:
+
+method="hmm" (default): robust heuristic/HMM-style segmentation + event-aware labeler.
+
+method="bocpd": optional online change-point detector (hazard-tuned), same reporting pipeline.
+
 🚀 Quick Start
-Installation
-
+Install (dev)
 pip install git+https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime.git
-Instant Analysis (2 Lines)
+
+One-liner
 import autoregime
-autoregime.quick_analysis('SPY')  # Complete regime analysis instantly
-Basic Usage
-import autoregime
+print(autoregime.stable_report("NVDA", start_date="2023-01-01", end_date="2025-09-18"))
 
-# Quick demo with real market data
-autoregime.quick_demo()
+Programmatic result
+import autoregime as ar
 
-# Launch interactive dashboard  
-autoregime.launch_dashboard()
+res = ar.stable_regime_analysis(
+    "SPY",
+    start_date="2015-01-01",
+    end_date=None,                   # up to latest
+    sensitivity="conservative",      # "conservative" (default) | "balanced" | "fast"
+    method="hmm",                    # "hmm" (default) | "bocpd"
+    return_result=True
+)
+print(res["current_status"])
+timeline = res["timeline"]          # pandas.DataFrame with standardized columns
 
-# Reliable analysis (always same result)
-result = autoregime.reliable_regime_analysis('SPY')
-🔧 Enhanced Stability Features
-AutoRegime now includes multiple analysis modes for different use cases:
+🧭 Interpreting the Report
 
-Stable Analysis (Enhanced Reliability)
-import autoregime
+Each period includes:
 
-# Stable analysis with enhanced parameters
-detector = autoregime.stable_regime_analysis('AAPL')
-print(f"Stable regimes detected: {detector.optimal_n_regimes}")
-Production Analysis (Maximum Reliability)
-# Production-ready analysis for live systems
-detector = autoregime.production_regime_analysis('SPY')
-timeline = detector.get_regime_timeline()
-Batch Analysis (Multiple Assets)
-# Analyze multiple assets at once
-results = autoregime.multi_asset_analysis(['AAPL', 'SPY', 'QQQ'], mode='stable')
-for symbol, detector in results.items():
-    print(f"{symbol}: {detector.optimal_n_regimes} regimes")
-🧪 Model Sensitivity & Reproducibility
-AutoRegime exhibits professional-grade behavior:
+Duration (dates, trading days, years)
 
-Same data + same seed = Identical results ✅
-Different data periods = Different regimes (expected) ✅
-Test Reproducibility
-# Verify consistent behavior
-autoregime.demonstrate_autoregime_sensitivity()
-Why different dates give different results:
+Annualized return/volatility, Sharpe, max drawdown
 
-Jan 1st vs Jan 3rd = Different market data points
-Hidden Markov Models are properly sensitive to data changes
-This is expected behavior for professional regime detection
-Solution: Use same date ranges for consistent analysis
-Stability Modes Comparison
-Mode	Max Regimes	Min Duration	Use Case
-Standard	6	20 days	Research, exploration
-Stable	4	20 days	Balanced analysis
-Production	3	30 days	Live trading systems
+Label chosen via sector-aware thresholds + sanity checks
 
-📊 Demo Codes
-Demo 1: Enhanced Stability Analysis
-import autoregime
+Label guide
 
-# Stable regime detection
-detector = autoregime.stable_regime_analysis('AAPL')
-print(f"AAPL Stable Analysis: {detector.optimal_n_regimes} regimes")
+Goldilocks — strong risk-adjusted returns with controlled volatility (rare by design).
 
-# Production-ready analysis  
-detector = autoregime.production_regime_analysis('SPY')
-print(f"SPY Production Analysis: {detector.optimal_n_regimes} regimes")
-Demo 2: Multi-Asset Batch Analysis
-# Analyze multiple assets with consistent parameters
-results = autoregime.multi_asset_analysis(['AAPL', 'SPY', 'QQQ', 'TLT'], mode='stable')
+Bull Market — positive drift, healthy momentum.
 
-for symbol, detector in results.items():
-    if detector:
-        timeline = detector.get_regime_timeline()
-        current_regime = timeline.iloc[-1]['Regime_Name']
-        print(f"{symbol}: {detector.optimal_n_regimes} regimes - Current: {current_regime}")
-Demo 3: Reproducibility Testing
-# Demonstrate professional sensitivity behavior
-autoregime.demonstrate_autoregime_sensitivity()
+Sideways — range-bound; limited directional edge.
 
-# This shows:
-# ✅ Same data + same seed = identical results
-# ✅ Different data periods = different regimes (expected)
-Demo 4: Production Usage
-from autoregime import AutoRegimeDetector, MarketDataLoader
-import numpy as np
+Risk-Off — negative tilt without extreme stress.
 
-detector = AutoRegimeDetector(random_state=42)  # Guaranteed consistency
-loader = MarketDataLoader()
-data = loader.load_market_data(['AAPL'], start_date='2020-01-01')
-detector.fit(data)
-regime = detector.predict_current_regime(data)
-print(f"AAPL: {regime}")
-🎯 What AutoRegime Detects
-🚀 Bull Market: High momentum with controlled volatility
-📉 Bear Market: Sustained downward pressure and defensive positioning
-🎯 Goldilocks: Ideal conditions - moderate growth with low volatility
-📊 Sideways: Range-bound markets requiring balanced strategies
-⚠️ Crisis: Extreme volatility requiring immediate risk management
-🏆 AutoRegime vs Competitors
-Feature	AutoRegime	hmmlearn	Academic Tools
-API Complexity	1 line	30+ lines	50+ lines
-Result Format	"Bull Market"	0, 1, 2...	0, 1, 2...
-Auto-Optimization	✅ Yes	❌ Manual	❌ Manual
-Reliability	✅ Deterministic	❌ Random	❌ Random
-Production Ready	✅ Yes	❌ Research only	❌ Prototypes
-🎯 Real-World Validation
-AutoRegime successfully identified major market events:
+Crisis — severe declines/volatility; deep drawdowns.
 
-✅ COVID-19 Crash (March 2020) - Crisis regime detected
-✅ 2008 Financial Crisis - Bear market identification
-✅ Dot-com Bubble (2000-2002) - Crisis → Bear transition
-✅ Bull Runs (2009-2020, 2020-2021) - Sustained bull detection
-✅ Current Market (Sept 2025) - "Steady Growth" regime
-📈 Example Output
-Standard Analysis
-============================================================
-AUTOREGIME ANALYSIS SUMMARY
-============================================================
-Optimal number of regimes: 4
+Design choices: “Goldilocks” is capped by strict volatility & drawdown rules; very short tails (e.g., 3–6 trading days) are suppressed unless they are genuine shocks.
 
-Bull Market:
-  Frequency: 30.5%
-  Annual Return: 38.9%
-  Sharpe Ratio: 0.83
-  
-Goldilocks:  
-  Frequency: 69.5%
-  Annual Return: 20.2%
-  Sharpe Ratio: 0.86
+⚙️ API Overview
+stable_report(...) -> str
 
-CURRENT MARKET STATUS:
-   Active Regime: Bull Market
-   Confidence Level: 100.0%
-   Expected Return: 38.9% annually
-   Strategy: INCREASE EQUITY ALLOCATION
-Stability Mode Output
-🔧 Stable Regime Analysis for AAPL
-Enhanced stability parameters active...
+Human-readable report for quick sharing.
 
-============================================================
-AUTOREGIME ANALYSIS SUMMARY
-🔧 STABILITY MODE ACTIVE
-============================================================
-Optimal number of regimes: 3
+print(autoregime.stable_report(
+    "AAPL",
+    start_date="2020-01-01",
+    sensitivity="conservative",  # default
+    method="hmm"                 # default
+))
 
-Goldilocks (Regime 0):
-  Frequency: 85.2%
-  Avg Duration: 45.3 days
-  Annual Return: 28.4%
-  Sharpe Ratio: 1.24
+stable_regime_analysis(...) -> dict | str | None
 
-Bull Market (Regime 1):  
-  Frequency: 12.1%
-  Avg Duration: 32.1 days
-  Annual Return: 52.7%
-  Sharpe Ratio: 1.89
+Structured result (report + timeline + status).
 
-Risk-Off (Regime 2):
-  Frequency: 2.7%
-  Avg Duration: 28.0 days  
-  Annual Return: -15.3%
-  Sharpe Ratio: -0.45
+Arguments
 
-✅ Stable Analysis Complete for AAPL
-📊 Detected 3 stable regimes
-🛠 Requirements
-Python 3.8+
-pandas >= 1.3.0
-numpy >= 1.21.0
-scikit-learn >= 1.0.0
-hmmlearn >= 0.2.7
-matplotlib >= 3.5.0
-plotly >= 5.0.0
-streamlit >= 1.28.0
-yfinance >= 0.1.87
-🔧 Installation Issues?
-Common Fixes:
+symbol: str — ticker ("NVDA", "SPY", "TLT", "BTC-USD", …)
 
-# Development install
-git clone https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime.git
-cd -AutoRegime  
-pip install -e .
+start_date, end_date: str | None — ISO date strings like "2020-01-01"
 
-# Update dependencies
-pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
-🤝 Contributing
-Contributions welcome! Areas for improvement:
+sensitivity: {"conservative","balanced","fast"} — segmentation strictness
 
-Additional regime types (Momentum, Reversal)
-More asset classes (Crypto, Bonds, Commodities)
-Enhanced visualization features
-Performance optimizations
-Please read CONTRIBUTING.md for guidelines.
+conservative (default): longest segments, cleanest timelines
 
-🌟 Why AutoRegime?
-The Problem: Existing regime detection requires:
+balanced: moderate
 
-30+ lines of complex HMM setup
-Manual parameter tuning
-Deep ML expertise
-Produces cryptic, unreliable results
-AutoRegime Solution:
+fast: more responsive, more segments
 
-✅ One-line API: autoregime.quick_analysis('SPY')
-✅ Human-readable regimes: "Bull Market" not "State 2"
-✅ Auto-optimization: No manual tuning needed
-✅ Production reliability: Consistent results every time
-✅ Rich insights: Sharpe ratios, confidence scores, recommendations
-📊 Business Applications
-Portfolio Management: Dynamic allocation based on regime
-Risk Management: Early warning system for regime changes
-Systematic Trading: Regime-aware strategy adjustments
-Research: Academic and institutional market analysis
+method: {"hmm","bocpd"} — default hmm; try bocpd for online detection
+
+return_result: bool — return dict (True, default) or just the report string (False)
+
+Result keys
+
+report: str
+
+timeline: pd.DataFrame with columns:
+
+period_index | label | start | end | trading_days | years | ann_return | ann_vol | sharpe | max_drawdown
+
+
+current_status: dict
+
+cfg: dict (effective config)
+
+🧪 Sensitivity Presets (what changes)
+Preset	Min segment	Tail suppression	Max periods	Use case
+conservative	High	Aggressive	10	Public demos, cleaner narratives
+balanced	Medium	Standard	11	General analysis
+fast	Lower	Light	12	Faster change capture
+
+Tip: For public sharing, conservative reads best (fewer than ~10 regimes).
+
+📌 Known Limits (honest notes)
+
+Annualization assumes ~252 trading days; very short windows can look extreme.
+
+“Goldilocks” is intentionally rare; strong runs with large drawdowns will be Bull, not Goldilocks.
+
+Micro end-tails are merged unless the move is deep/negative (prevents noisy 3–6 day fragments).
+
+Data quality depends on yfinance (holidays/splits handled, but outages may occur).
+
+🧱 Requirements
+
+Python 3.9+
+
+pandas, numpy, yfinance
+
+(Optional) matplotlib, plotly for your own visualizations
+
+🗺️ Roadmap (short)
+
+Engine unification: HMM + BOCPD + offline CPD behind one API
+
+Stability selection: multi-seed/window agreement scoring
+
+Benchmarks: segmentation quality + latency + regime-aware utility
+
+App/API: Streamlit viewer and FastAPI endpoint
+
+(See AutoRegime – Roadmap, README Upgrade, and Benchmark Pack in this repo for the full plan.)
+
+🧰 Troubleshooting
+
+“No analysis produced”: check date range & ticker; ensure data exists in that window.
+
+Too many regimes: use sensitivity="conservative" (default) or widen the date range.
+
+Short end fragment: the “tail suppressor” merges tiny tails unless deeply negative — this is expected.
+
+Timezones: indexes are normalized to timezone-naive UTC internally.
+
 📝 License
-MIT License - see LICENSE file for details.
 
-🏅 About the Author
-Built by Kanyinsola Ogunbanjo - Quantitative Finance Professional
+MIT
 
-📧 Email: kanyinsolaogunbanjo@gmail.com
-🔗 LinkedIn: Kanyinsola Ogunbanjo
+👤 Author
+
+Kanyinsola Ogunbanjo — Quantitative Finance
+📧 kanyinsolaogunbanjo@gmail.com
+
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
-⭐ Star this repo if AutoRegime helps your market analysis!
 
-🍴 Fork it to contribute your own regime detection improvements!
-
-📈 Try it now: pip install git+https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime.git
-
+If AutoRegime helps your workflow, please ⭐ the repo and share feedback/issues!
