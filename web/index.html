@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AutoRegime — Nowcast</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Plotly -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root{
+      --bg:#0f1220; --card:#171a2b; --ink:#e9ecff; --muted:#9aa3c7; --accent:#6ea8fe;
+      --gold:#f6c453; --bull:#3ddc84; --side:#8ea2c5; --risk:#f39c12; --crisis:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
+      background:linear-gradient(180deg,#0f1220,#0b0e1a 60%); color:var(--ink);
+    }
+    header{
+      padding:18px 20px; border-bottom:1px solid #242845; position:sticky; top:0; background:#0f1220cc; backdrop-filter: blur(6px);
+      display:flex; align-items:center; gap:16px;
+    }
+    .logo{ font-weight:700; letter-spacing:.3px }
+    .pill{border:1px solid #273056; padding:6px 10px; border-radius:999px; color:var(--muted); font-size:12px}
+    .wrap{ max-width:1200px; margin:0 auto; padding:20px }
+    .grid{ display:grid; grid-template-columns: 320px 1fr; gap:18px }
+    .card{
+      background:var(--card); border:1px solid #232845; border-radius:14px; padding:14px;
+      box-shadow: 0 10px 20px #00000033, inset 0 1px 0 #242a4a;
+    }
+    .card h3{ margin:6px 0 10px 0; font-size:16px }
+    .muted{ color:var(--muted) }
+    .row{ display:flex; gap:8px; flex-wrap:wrap }
+    .row > * { flex:1 }
+    input, select, button { width:100%; background:#0f1220; color:var(--ink); border:1px solid #283056; border-radius:10px; padding:10px 12px; outline:none; }
+    button.primary{ background:linear-gradient(135deg,#3b82f6,#2563eb); border:none; font-weight:600; cursor:pointer }
+    button.ghost{ background:#0f1220; border:1px solid #283056; cursor:pointer }
+    .cards{ display:grid; gap:12px }
+    .ticker-card{ display:grid; grid-template-columns: 1fr 300px; gap:12px }
+    .badge{ display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid #2b3258; color:var(--muted) }
+    .metric{ display:flex; flex-direction:column; gap:2px; padding:10px; background:#111430; border:1px dashed #2a2f50; border-radius:10px }
+    .metric span{ color:var(--muted); font-size:12px }
+    .metric b{ font-size:15px }
+    .chips{ display:flex; gap:6px; flex-wrap:wrap }
+    .chip{ font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #2b3258; color:var(--muted) }
+    .dot{ width:8px; height:8px; border-radius:50%; display:inline-block }
+    .note{ font-size:12px; color:#7f88ad }
+    footer{ color:#7f88ad; font-size:12px; padding:18px 0 8px 0 }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr } .ticker-card{ grid-template-columns: 1fr } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">🚀 AutoRegime</div>
+    <div class="pill">Live Nowcast — HMM / BOCPD</div>
+    <div class="pill" id="apiStatus">API: checking…</div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- Controls -->
+      <div class="card">
+        <h3>Settings</h3>
+        <div class="row">
+          <div><label class="muted">Tickers (comma-separated)</label><input id="tickers" value="NVDA,SPY,TLT" /></div>
+        </div>
+        <div class="row">
+          <div>
+            <label class="muted">Method</label>
+            <select id="method"><option value="hmm" selected>hmm</option><option value="bocpd">bocpd</option></select>
+          </div>
+          <div>
+            <label class="muted">Sensitivity</label>
+            <select id="sensitivity">
+              <option value="conservative" selected>conservative</option>
+              <option value="balanced">balanced</option>
+              <option value="fast">fast</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div><label class="muted">Start (YYYY-MM-DD)</label><input id="start" value="2015-01-01" /></div>
+          <div><label class="muted">End (optional)</label><input id="end" placeholder="leave blank for latest" /></div>
+        </div>
+        <div class="row">
+          <div>
+            <label class="muted">Agreement mode</label>
+            <select id="agreement">
+              <option value="engines" selected>engines (HMM vs BOCPD)</option>
+              <option value="none">none</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted">Confidence source</label>
+            <select id="confidence_from">
+              <option value="agreement_then_sharpe" selected>agreement → sharpe</option>
+              <option value="agreement_only">agreement only</option>
+              <option value="sharpe_only">sharpe only</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="primary" id="runBtn">Run Analysis</button>
+          <button class="ghost" id="sampleBtn">Load Sample (NVDA last 3 weeks)</button>
+        </div>
+
+        <div id="legend" class="chips" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Results -->
+      <div class="cards" id="results">
+        <div class="card">
+          <div class="muted">Tip</div>
+          <div style="margin-top:6px">
+            Click <b>Run Analysis</b> to fetch results from <code>GET /regime</code> and render a timeline per ticker.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="note">Front-end calls your FastAPI at <code id="apiBaseShow">http://127.0.0.1:8000</code>. Change <code>API_BASE</code> in the page if needed.</div>
+    </footer>
+  </div>
+
+  <script>
+    // === Configuration ===
+    const API_BASE = "http://127.0.0.1:8000";
+
+    // Local fallback colors (overridden by API palette if provided)
+    const COLORS = {
+      "Bull Market": getComputedStyle(document.documentElement).getPropertyValue("--bull").trim() || "#16a34a",
+      "Goldilocks":  getComputedStyle(document.documentElement).getPropertyValue("--gold").trim() || "#f59e0b",
+      "Sideways":    getComputedStyle(document.documentElement).getPropertyValue("--side").trim() || "#64748b",
+      "Risk-Off":    getComputedStyle(document.documentElement).getPropertyValue("--risk").trim() || "#ef4444",
+      "RiskOff":     getComputedStyle(document.documentElement).getPropertyValue("--risk").trim() || "#ef4444",
+      "Crisis":      getComputedStyle(document.documentElement).getPropertyValue("--crisis").trim() || "#7f1d1d",
+    };
+
+    function colorFor(label, rec){
+      // Prefer API-provided color per record; fallback to local palette
+      return (rec && rec.color) ? rec.color : (COLORS[label] || "#999999");
+    }
+    function opacityFor(rec){
+      // Map confidence [0..1] -> opacity [0.35..1.0]
+      const c = (rec && typeof rec.confidence === "number") ? rec.confidence : 0.6;
+      return Math.max(0.35, Math.min(1.0, 0.35 + 0.65 * c));
+    }
+
+    function renderLegend(){
+      const root = document.getElementById("legend"); root.innerHTML = "";
+      for(const lab of ["Bull Market","Goldilocks","Sideways","Risk-Off","Crisis"]){
+        const chip = document.createElement("div");
+        chip.className = "chip";
+        chip.innerHTML = `<span class="dot" style="background:${colorFor(lab)}"></span>&nbsp;${lab}`;
+        root.appendChild(chip);
+      }
+    }
+
+    function toCSV(rows){
+      if(!rows || !rows.length) return "";
+      const cols = Object.keys(rows[0]);
+      const esc = v => String(v ?? "").replaceAll('"','""');
+      const head = cols.join(",");
+      const body = rows.map(r => cols.map(c => `"${esc(r[c])}"`).join(",")).join("\n");
+      return head + "\n" + body + "\n";
+    }
+    function downloadText(name, txt){
+      const blob = new Blob([txt], {type:"text/plain;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 200);
+    }
+    function fmtPct(x){ return (x==null) ? "—" : (Number(x).toFixed(1) + "%"); }
+    function isoDateOnly(s){ return s ? String(s).slice(0,10) : s; }
+    function cssSafe(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,"_"); }
+
+    // === API status ===
+    async function probeAPI(){
+      const tag = document.getElementById("apiStatus");
+      try{
+        const r = await fetch(`${API_BASE}/health`);
+        if(r.ok){ tag.textContent = "API: online"; tag.style.color="#9ef9c7"; tag.style.borderColor="#2c7a57"; }
+        else { tag.textContent = "API: unreachable"; tag.style.color="#e74c3c"; }
+      }catch(e){ tag.textContent = "API: unreachable"; tag.style.color="#e74c3c"; }
+      document.getElementById("apiBaseShow").textContent = API_BASE;
+    }
+    probeAPI();
+    renderLegend();
+
+    // === Main action ===
+    document.getElementById("runBtn").addEventListener("click", async ()=>{
+      const tickers = document.getElementById("tickers").value.trim();
+      const method = document.getElementById("method").value;
+      const sensitivity = document.getElementById("sensitivity").value;
+      const start = document.getElementById("start").value.trim();
+      const end = document.getElementById("end").value.trim();
+      const agreement = document.getElementById("agreement").value;
+      const confidence_from = document.getElementById("confidence_from").value;
+
+      const params = new URLSearchParams({ tickers, method, sensitivity, agreement, confidence_from });
+      if(start) params.set("start", start);
+      if(end) params.set("end", end);
+
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = `<div class="card">Fetching…</div>`;
+
+      try{
+        const resp = await fetch(`${API_BASE}/regime?` + params.toString());
+        const data = await resp.json();
+        if(!resp.ok){ throw new Error(JSON.stringify(data)); }
+
+        // If API sent a palette, merge it into local COLORS
+        const anyResult = Object.values(data.results || {})[0];
+        const apiPalette = anyResult?.meta?.palette;
+        if (apiPalette && typeof apiPalette === "object") { Object.assign(COLORS, apiPalette); renderLegend(); }
+
+        const { results, errors } = data;
+        resultsDiv.innerHTML = "";
+
+        // Show errors (if any)
+        for(const [t, msg] of Object.entries(errors || {})){
+          const err = document.createElement("div");
+          err.className = "card";
+          err.innerHTML = `<div class="muted">Error — ${t}</div><div style="margin-top:6px;color:#ff6b6b">${msg}</div>`;
+          resultsDiv.appendChild(err);
+        }
+
+        // Render each ticker card
+        for(const [ticker, payload] of Object.entries(results || {})){
+          renderTickerCard(resultsDiv, ticker, payload);
+        }
+      }catch(e){
+        const resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = `<div class="card" style="color:#ff6b6b">Request failed: ${e}</div>`;
+      }
+    });
+
+    document.getElementById("sampleBtn").addEventListener("click", ()=>{
+      document.getElementById("tickers").value = "NVDA";
+      const today = new Date();
+      const start = new Date(today.getTime() - 21*24*3600*1000);
+      document.getElementById("start").value = start.toISOString().slice(0,10);
+      document.getElementById("end").value = today.toISOString().slice(0,10);
+    });
+
+    // === Card + Timeline ===
+    function renderTickerCard(root, ticker, payload){
+      const card = document.createElement("div"); card.className = "card ticker-card";
+      const left = document.createElement("div"); const right = document.createElement("div");
+
+      // Header / chart
+      left.innerHTML = `
+        <div class="row" style="align-items:center; margin-bottom:6px">
+          <div class="badge">Ticker: <b>${ticker}</b></div>
+          <div class="badge">Engine: <code>${payload?.meta?.engine || "hmm"}</code></div>
+          <div class="badge">Sector: ${payload?.meta?.sector || "—"}</div>
+          <div class="badge">Agreement: <code>${(payload?.current_status?.agreement!=null)? Math.round(payload.current_status.agreement*100)+'%' : '—'}</code></div>
+        </div>
+        <div id="chart_${cssSafe(ticker)}" style="width:100%;height:360px"></div>
+        <div class="note" style="margin-top:6px">Bar <b>opacity</b> reflects confidence; hover shows label code & agreement.</div>
+      `;
+
+      // Metrics + actions
+      const cs = payload.current_status || {};
+      right.innerHTML = `
+        <div class="metric"><span>Active Regime</span><b>${cs.regime ?? "—"}</b></div>
+        <div class="row" style="margin-top:8px">
+          <div class="metric"><span>Regime Start</span><b>${isoDateOnly(cs.start) ?? "—"}</b></div>
+          <div class="metric"><span>Duration</span><b>${cs.duration_days ?? "—"} days</b></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="metric"><span>Annualized Return</span><b>${fmtPct(cs.ann_return)}</b></div>
+          <div class="metric"><span>Annualized Vol</span><b>${fmtPct(cs.ann_vol)}</b></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="metric"><span>Max Drawdown (period)</span><b>${fmtPct(cs.mdd)}</b></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="metric"><span>Confidence (current)</span><b>${cs.confidence != null ? (Math.round(cs.confidence*100)+"%") : "—"}</b></div>
+          <div class="metric"><span>Agreement (current)</span><b>${cs.agreement != null ? (Math.round(cs.agreement*100)+"%") : "—"}</b></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="primary" id="copy_${cssSafe(ticker)}">Copy Report</button>
+          <button class="ghost" id="csv_${cssSafe(ticker)}">Download CSV</button>
+        </div>
+      `;
+
+      card.appendChild(left); card.appendChild(right); root.appendChild(card);
+
+      // Hooks
+      document.getElementById(`copy_${cssSafe(ticker)}`).addEventListener("click", ()=>{
+        navigator.clipboard.writeText(payload.report || "").then(()=>{ alert("Report copied to clipboard."); });
+      });
+      document.getElementById(`csv_${cssSafe(ticker)}`).addEventListener("click", ()=>{
+        const csv = toCSV(payload.timeline || []);
+        downloadText(`${ticker}_timeline.csv`, csv);
+      });
+
+      // Timeline
+      drawTimeline(`chart_${cssSafe(ticker)}`, payload.timeline || []);
+    }
+
+    function drawTimeline(divId, rows){
+      if(!rows || !rows.length){
+        document.getElementById(divId).innerHTML = "<div class='muted'>No timeline.</div>";
+        return;
+      }
+      const byLabel = {};
+      for(const r of rows){
+        const lbl = (r.label || "Unknown");
+        if(!byLabel[lbl]) byLabel[lbl] = [];
+        const startMs = new Date(r.start).getTime();
+        const endMs = new Date(r.end).getTime();
+        const dur = Math.max(24*3600*1000, endMs - startMs);
+        const prettyStart = isoDateOnly(r.start);
+        const prettyEnd = isoDateOnly(r.end);
+        const conf = (typeof r.confidence === "number") ? r.confidence : 0.9;
+        const agree = (typeof r.agreement === "number") ? r.agreement : null;
+        byLabel[lbl].push({
+          base: new Date(startMs),
+          x: dur,
+          y: lbl,
+          color: colorFor(lbl, r),
+          opacity: opacityFor(r),
+          hover:
+            `Period ${r.period_index}<br>${lbl} (code ${r.label_code ?? "?"})<br>` +
+            `${prettyStart} → ${prettyEnd}<br>` +
+            (agree!=null ? `Agreement ${Math.round(agree*100)}%<br>` : ``) +
+            `Conf ${Math.round(conf*100)}%<br>` +
+            `Ann ret ${Number(r.ann_return ?? 0).toFixed(1)}% | vol ${Number(r.ann_vol ?? 0).toFixed(1)}%<br>` +
+            `MDD ${Number(r.max_drawdown ?? 0).toFixed(1)}%`
+        });
+      }
+      const traces = [];
+      Object.entries(byLabel).forEach(([lbl, arr])=>{
+        traces.push({
+          type: "bar", orientation: "h",
+          x: arr.map(a=>a.x), y: arr.map(a=>a.y), base: arr.map(a=>a.base),
+          marker: { color: arr.map(a=>a.color), opacity: arr.map(a=>a.opacity) },
+          name: lbl, hovertemplate: arr.map(a=>a.hover), showlegend: true
+        });
+      });
+
+      const layout = {
+        barmode: "stack", title: "",
+        paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+        margin: {l:90, r:20, t:10, b:40},
+        xaxis: { type: "date", gridcolor: "#263055", tickfont: {color:"#b8c1ea"}, title: "Date", zerolinecolor: "#263055" },
+        yaxis: { gridcolor: "#263055", tickfont: {color:"#b8c1ea"}, title: "" },
+        legend: { orientation:"h", x:0, y:1.12, font:{color:"#c9cfef"} }
+      };
+      Plotly.newPlot(divId, traces, layout, { displayModeBar: true, responsive: true });
+    }
+  </script>
+</body>
+</html>
