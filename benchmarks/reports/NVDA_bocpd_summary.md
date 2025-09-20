@@ -1,5 +1,5 @@
 # NVDA — BOCPD summary
 
 - Periods: 10
-- Current: Bull Market since 2025-04-09 (112 days)
-- Ann. return: 289.7%, Ann. vol: 44.1%, MDD: -15.2%
+- Current: Bull Market since 2024-07-17 (296 days)
+- Ann. return: 33.1%, Ann. vol: 53.6%, MDD: -36.9%

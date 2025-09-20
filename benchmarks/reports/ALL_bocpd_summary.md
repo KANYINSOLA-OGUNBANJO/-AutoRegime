@@ -1,5 +1,5 @@
 # ALL — BOCPD summary
 
 - Periods: 10
-- Current: Goldilocks since 2024-07-18 (293 days)
-- Ann. return: 15.6%, Ann. vol: 26.4%, MDD: -14.1%
+- Current: Goldilocks since 2024-07-18 (295 days)
+- Ann. return: 19.9%, Ann. vol: 26.6%, MDD: -14.1%
