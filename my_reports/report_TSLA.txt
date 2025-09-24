@@ -1,0 +1,119 @@
+REGIME ANALYSIS
+================
+
+PERIOD 1: Bear Market
+   Duration: 2018-01-03 to 2018-09-06
+   Length: 171 trading days (0.7 years)
+   Annual Return: -19.4%
+   Annual Volatility: 51.1%
+   Sharpe Ratio: -0.38
+   Max Drawdown: -29.4%
+
+PERIOD 2: Bull Market
+   Duration: 2018-09-07 to 2018-10-26
+   Length: 36 trading days (0.1 years)
+   Annual Return: 114.5%
+   Annual Volatility: 87.6%
+   Sharpe Ratio: 1.31
+   Max Drawdown: -19.4%
+
+PERIOD 3: Bear Market
+   Duration: 2018-10-29 to 2020-02-05
+   Length: 319 trading days (1.3 years)
+   Annual Return: 63.0%
+   Annual Volatility: 56.6%
+   Sharpe Ratio: 1.11
+   Max Drawdown: -52.5%
+
+PERIOD 4: Bull Market
+   Duration: 2020-02-06 to 2020-10-02
+   Length: 167 trading days (0.7 years)
+   Annual Return: 156.7%
+   Annual Volatility: 96.3%
+   Sharpe Ratio: 1.63
+   Max Drawdown: -60.6%
+
+PERIOD 5: Bear Market
+   Duration: 2020-10-05 to 2020-11-16
+   Length: 31 trading days (0.1 years)
+   Annual Return: -13.8%
+   Annual Volatility: 39.9%
+   Sharpe Ratio: -0.35
+   Max Drawdown: -15.9%
+
+PERIOD 6: Bull Market
+   Duration: 2020-11-17 to 2021-01-06
+   Length: 34 trading days (0.1 years)
+   Annual Return: 457.0%
+   Annual Volatility: 60.8%
+   Sharpe Ratio: 7.52
+   Max Drawdown: -7.9%
+
+PERIOD 7: Bear Market
+   Duration: 2021-01-07 to 2021-12-02
+   Length: 229 trading days (0.9 years)
+   Annual Return: 39.7%
+   Annual Volatility: 53.7%
+   Sharpe Ratio: 0.74
+   Max Drawdown: -36.2%
+
+PERIOD 8: Bull Market
+   Duration: 2021-12-03 to 2022-06-21
+   Length: 137 trading days (0.5 years)
+   Annual Return: -77.6%
+   Annual Volatility: 72.4%
+   Sharpe Ratio: -1.07
+   Max Drawdown: -47.6%
+
+PERIOD 9: Bear Market
+   Duration: 2022-06-22 to 2022-10-25
+   Length: 88 trading days (0.3 years)
+   Annual Return: -18.2%
+   Annual Volatility: 53.6%
+   Sharpe Ratio: -0.34
+   Max Drawdown: -33.7%
+
+PERIOD 10: Bull Market
+   Duration: 2022-10-26 to 2023-02-21
+   Length: 80 trading days (0.3 years)
+   Annual Return: -37.6%
+   Annual Volatility: 75.6%
+   Sharpe Ratio: -0.50
+   Max Drawdown: -52.7%
+
+PERIOD 11: Bear Market
+   Duration: 2023-02-22 to 2024-06-28
+   Length: 340 trading days (1.3 years)
+   Annual Return: 0.2%
+   Annual Volatility: 49.9%
+   Sharpe Ratio: 0.00
+   Max Drawdown: -51.6%
+
+PERIOD 12: Bull Market
+   Duration: 2024-07-01 to 2024-09-10
+   Length: 50 trading days (0.2 years)
+   Annual Return: 67.3%
+   Annual Volatility: 71.4%
+   Sharpe Ratio: 0.94
+   Max Drawdown: -27.2%
+
+PERIOD 13: Bear Market
+   Duration: 2024-09-11 to 2024-10-23
+   Length: 31 trading days (0.1 years)
+   Annual Return: -46.3%
+   Annual Volatility: 44.6%
+   Sharpe Ratio: -1.04
+   Max Drawdown: -18.3%
+
+PERIOD 14: Bull Market
+   Duration: 2024-10-24 to 2024-12-30
+   Length: 46 trading days (0.2 years)
+   Annual Return: 366.9%
+   Annual Volatility: 80.8%
+   Sharpe Ratio: 4.54
+   Max Drawdown: -13.0%
+
+CURRENT MARKET STATUS:
+   Active Regime: Bull Market
+   Regime Started: 2024-10-24
+   Duration So Far: 46 days

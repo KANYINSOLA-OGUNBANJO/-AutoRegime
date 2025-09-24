@@ -1,0 +1,4 @@
+SPY
+QQQ
+NVDA
+AAPL

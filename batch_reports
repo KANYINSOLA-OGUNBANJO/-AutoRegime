@@ -1,0 +1,107 @@
+import os
+import sys
+import argparse
+from datetime import datetime
+import pandas as pd
+
+# Import the two entrypoints you already have working
+from autoregime import stable_regime_analysis, stable_report
+
+def parse_args():
+    p = argparse.ArgumentParser(
+        description="Batch regime reports (text + CSV) for multiple tickers."
+    )
+    p.add_argument("--tickers", nargs="+", default=["SPY", "QQQ", "NVDA", "AAPL"],
+                   help="One or more tickers (space-separated).")
+    p.add_argument("--start", default="2015-01-01",
+                   help="Start date (YYYY-MM-DD).")
+    p.add_argument("--end", default=None,
+                   help="End date (YYYY-MM-DD) or omit for latest.")
+    p.add_argument("--min-segment-days", type=int, default=20,
+                   help="Minimum regime length in trading days.")
+    p.add_argument("--sticky", type=float, default=0.98,
+                   help="Higher -> fewer switches (0.98-0.995 is typical).")
+    p.add_argument("--outdir", default=None,
+                   help="Output directory. If omitted, a timestamped folder is created.")
+    return p.parse_args()
+
+def main():
+    args = parse_args()
+
+    # Decide output folder
+    outdir = args.outdir or f"reports_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    os.makedirs(outdir, exist_ok=True)
+
+    print(f"[batch] Tickers: {args.tickers}")
+    print(f"[batch] Date range: {args.start} -> {args.end or 'latest'}")
+    print(f"[batch] Params: min_segment_days={args.min_segment_days}, sticky={args.sticky}")
+    print(f"[batch] Output folder: {os.path.abspath(outdir)}\n")
+
+    # We’ll also build a small summary table across tickers
+    summary_rows = []
+
+    for t in args.tickers:
+        print(f"[batch] {t}: {args.start} -> {args.end or 'latest'}")
+        try:
+            # Pretty text report
+            text = stable_report(
+                t,
+                start_date=args.start,
+                end_date=args.end,
+                verbose=False
+            )
+
+            # Structured timeline
+            res = stable_regime_analysis(
+                t,
+                start_date=args.start,
+                end_date=args.end,
+                return_result=True,
+                verbose=False,
+                min_segment_days=args.min_segment_days,
+                sticky=args.sticky,
+            )
+
+            tl = pd.DataFrame(res["regime_timeline"])
+
+            # Save per-ticker artifacts
+            csv_path = os.path.join(outdir, f"regime_timeline_{t}.csv")
+            txt_path = os.path.join(outdir, f"report_{t}.txt")
+
+            tl.to_csv(csv_path, index=False)
+            with open(txt_path, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            print(f"[batch]  -> wrote {csv_path}")
+            print(f"[batch]  -> wrote {txt_path}")
+
+            # Build a compact row for cross-ticker summary (use last period)
+            if not tl.empty:
+                last = tl.iloc[-1]
+                summary_rows.append({
+                    "ticker": t,
+                    "active_label": last["label"],
+                    "regime_start": last["start"],
+                    "regime_end": last["end"],
+                    "trading_days": last["trading_days"],
+                    "ann_return": last["ann_return"],
+                    "ann_vol": last["ann_vol"],
+                    "sharpe": last["sharpe"],
+                    "max_drawdown": last["max_drawdown"],
+                })
+
+        except Exception as e:
+            # Don’t stop the batch if one ticker fails
+            print(f"[batch]  !! ERROR for {t}: {e}", file=sys.stderr)
+
+    # Save summary if we have any rows
+    if summary_rows:
+        summary_df = pd.DataFrame(summary_rows)
+        summary_path = os.path.join(outdir, "summary_across_tickers.csv")
+        summary_df.to_csv(summary_path, index=False)
+        print(f"\n[batch] Summary written: {summary_path}")
+
+    print(f"\n[batch] Done. All files in: {os.path.abspath(outdir)}")
+
+if __name__ == "__main__":
+    main()

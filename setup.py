@@ -41,10 +41,16 @@ setup(
     ],
     keywords=[
         "market regime detection",
-        "financial analysis", 
+        "financial analysis",
         "hidden markov models",
         "quantitative finance",
-        "research tools"
+        "research tools",
     ],
+    # >>> ADD THIS BLOCK <<<
+    entry_points={
+        "console_scripts": [
+            # exposes a command named `autoregime` that runs autoregime/cli.py:main
+            "autoregime=autoregime.cli:main",
+        ],
+    },
 )
-

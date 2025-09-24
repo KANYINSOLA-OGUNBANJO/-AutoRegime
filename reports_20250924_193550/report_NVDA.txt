@@ -1,0 +1,79 @@
+REGIME ANALYSIS
+================
+
+PERIOD 1: Bull Market
+   Duration: 2020-01-03 to 2020-02-13
+   Length: 29 trading days (0.1 years)
+   Annual Return: 105.2%
+   Annual Volatility: 30.2%
+   Sharpe Ratio: 3.48
+   Max Drawdown: -6.5%
+
+PERIOD 2: Bear Market
+   Duration: 2020-02-14 to 2020-04-22
+   Length: 47 trading days (0.2 years)
+   Annual Return: 29.9%
+   Annual Volatility: 105.0%
+   Sharpe Ratio: 0.28
+   Max Drawdown: -37.6%
+
+PERIOD 3: Bull Market
+   Duration: 2020-04-23 to 2021-11-03
+   Length: 388 trading days (1.5 years)
+   Annual Return: 85.4%
+   Annual Volatility: 40.6%
+   Sharpe Ratio: 2.10
+   Max Drawdown: -24.4%
+
+PERIOD 4: Bear Market
+   Duration: 2021-11-04 to 2023-02-23
+   Length: 327 trading days (1.3 years)
+   Annual Return: -8.9%
+   Annual Volatility: 63.7%
+   Sharpe Ratio: -0.14
+   Max Drawdown: -66.3%
+
+PERIOD 5: Bull Market
+   Duration: 2023-02-24 to 2024-02-16
+   Length: 247 trading days (1.0 years)
+   Annual Return: 114.4%
+   Annual Volatility: 42.1%
+   Sharpe Ratio: 2.72
+   Max Drawdown: -18.3%
+
+PERIOD 6: Bear Market
+   Duration: 2024-02-20 to 2024-09-11
+   Length: 142 trading days (0.6 years)
+   Annual Return: 84.5%
+   Annual Volatility: 61.5%
+   Sharpe Ratio: 1.37
+   Max Drawdown: -27.0%
+
+PERIOD 7: Bull Market
+   Duration: 2024-09-12 to 2025-01-02
+   Length: 78 trading days (0.3 years)
+   Annual Return: 54.4%
+   Annual Volatility: 36.2%
+   Sharpe Ratio: 1.50
+   Max Drawdown: -13.4%
+
+PERIOD 8: Bear Market
+   Duration: 2025-01-03 to 2025-04-25
+   Length: 77 trading days (0.3 years)
+   Annual Return: -71.9%
+   Annual Volatility: 74.8%
+   Sharpe Ratio: -0.96
+   Max Drawdown: -36.9%
+
+PERIOD 9: Bull Market
+   Duration: 2025-04-28 to 2025-09-23
+   Length: 103 trading days (0.4 years)
+   Annual Return: 116.1%
+   Annual Volatility: 29.8%
+   Sharpe Ratio: 3.89
+   Max Drawdown: -8.8%
+
+CURRENT MARKET STATUS:
+   Active Regime: Bull Market
+   Regime Started: 2025-04-28
+   Duration So Far: 103 days
