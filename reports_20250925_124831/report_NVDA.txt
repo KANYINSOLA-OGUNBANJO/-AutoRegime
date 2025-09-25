@@ -1,0 +1,687 @@
+REGIME ANALYSIS
+================
+
+PERIOD 1: Goldilocks
+   Duration: 2015-01-05 to 2015-01-08
+   Length: 4 trading days (0.0 years)
+   Annual Return: -85.1%
+   Annual Volatility: 40.2%
+   Sharpe Ratio: -2.12
+   Max Drawdown: -3.3%
+
+PERIOD 2: Bull Market
+   Duration: 2015-01-09 to 2015-01-26
+   Length: 11 trading days (0.0 years)
+   Annual Return: 86.0%
+   Annual Volatility: 14.9%
+   Sharpe Ratio: 5.77
+   Max Drawdown: -1.7%
+
+PERIOD 3: Bear Market
+   Duration: 2015-01-27 to 2015-01-30
+   Length: 4 trading days (0.0 years)
+   Annual Return: -449.5%
+   Annual Volatility: 42.6%
+   Sharpe Ratio: -10.55
+   Max Drawdown: -2.9%
+
+PERIOD 4: Goldilocks
+   Duration: 2015-02-02 to 2015-02-02
+   Length: 1 trading days (0.0 years)
+   Annual Return: 545.3%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 5: Bull Market
+   Duration: 2015-02-03 to 2015-02-11
+   Length: 7 trading days (0.0 years)
+   Annual Return: 212.0%
+   Annual Volatility: 20.9%
+   Sharpe Ratio: 10.16
+   Max Drawdown: -0.7%
+
+PERIOD 6: Goldilocks
+   Duration: 2015-02-12 to 2015-02-12
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1742.7%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 7: Bull Market
+   Duration: 2015-02-13 to 2015-03-20
+   Length: 25 trading days (0.1 years)
+   Annual Return: 55.4%
+   Annual Volatility: 18.2%
+   Sharpe Ratio: 3.04
+   Max Drawdown: -1.9%
+
+PERIOD 8: Bear Market
+   Duration: 2015-03-23 to 2015-03-24
+   Length: 2 trading days (0.0 years)
+   Annual Return: -587.9%
+   Annual Volatility: 15.2%
+   Sharpe Ratio: -38.63
+   Max Drawdown: -1.4%
+
+PERIOD 9: Bull Market
+   Duration: 2015-03-25 to 2015-08-19
+   Length: 103 trading days (0.4 years)
+   Annual Return: 8.5%
+   Annual Volatility: 32.4%
+   Sharpe Ratio: 0.26
+   Max Drawdown: -14.8%
+
+PERIOD 10: Bear Market
+   Duration: 2015-08-20 to 2015-08-25
+   Length: 4 trading days (0.0 years)
+   Annual Return: -790.2%
+   Annual Volatility: 10.0%
+   Sharpe Ratio: -78.96
+   Max Drawdown: -8.5%
+
+PERIOD 11: Goldilocks
+   Duration: 2015-08-26 to 2015-08-26
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1832.9%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 12: Bear Market
+   Duration: 2015-08-27 to 2015-09-04
+   Length: 7 trading days (0.0 years)
+   Annual Return: -9.9%
+   Annual Volatility: 41.1%
+   Sharpe Ratio: -0.24
+   Max Drawdown: -5.1%
+
+PERIOD 13: Bull Market
+   Duration: 2015-09-08 to 2016-01-14
+   Length: 90 trading days (0.4 years)
+   Annual Return: 78.4%
+   Annual Volatility: 35.1%
+   Sharpe Ratio: 2.23
+   Max Drawdown: -15.1%
+
+PERIOD 14: Goldilocks
+   Duration: 2016-01-15 to 2016-01-15
+   Length: 1 trading days (0.0 years)
+   Annual Return: -1409.9%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 15: Bull Market
+   Duration: 2016-01-19 to 2016-01-28
+   Length: 8 trading days (0.0 years)
+   Annual Return: 107.4%
+   Annual Volatility: 17.6%
+   Sharpe Ratio: 6.12
+   Max Drawdown: -2.3%
+
+PERIOD 16: Bear Market
+   Duration: 2016-01-29 to 2016-02-17
+   Length: 13 trading days (0.1 years)
+   Annual Return: -27.1%
+   Annual Volatility: 51.2%
+   Sharpe Ratio: -0.53
+   Max Drawdown: -13.9%
+
+PERIOD 17: Bull Market
+   Duration: 2016-02-18 to 2016-11-04
+   Length: 183 trading days (0.7 years)
+   Annual Return: 124.1%
+   Annual Volatility: 31.0%
+   Sharpe Ratio: 4.00
+   Max Drawdown: -6.8%
+
+PERIOD 18: Sideways
+   Duration: 2016-11-07 to 2017-03-02
+   Length: 79 trading days (0.3 years)
+   Annual Return: 122.7%
+   Annual Volatility: 64.6%
+   Sharpe Ratio: 1.90
+   Max Drawdown: -16.8%
+
+PERIOD 19: Bull Market
+   Duration: 2017-03-03 to 2017-04-03
+   Length: 22 trading days (0.1 years)
+   Annual Return: 103.7%
+   Annual Volatility: 22.3%
+   Sharpe Ratio: 4.65
+   Max Drawdown: -3.2%
+
+PERIOD 20: Goldilocks
+   Duration: 2017-04-04 to 2017-04-04
+   Length: 1 trading days (0.0 years)
+   Annual Return: -1832.1%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 21: Bull Market
+   Duration: 2017-04-05 to 2017-05-09
+   Length: 24 trading days (0.1 years)
+   Annual Return: 22.3%
+   Annual Volatility: 23.9%
+   Sharpe Ratio: 0.93
+   Max Drawdown: -5.2%
+
+PERIOD 22: Goldilocks
+   Duration: 2017-05-10 to 2017-05-10
+   Length: 1 trading days (0.0 years)
+   Annual Return: 4133.8%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 23: Bear Market
+   Duration: 2017-05-11 to 2017-05-17
+   Length: 5 trading days (0.0 years)
+   Annual Return: 260.3%
+   Annual Volatility: 66.7%
+   Sharpe Ratio: 3.90
+   Max Drawdown: -6.6%
+
+PERIOD 24: Goldilocks
+   Duration: 2017-05-18 to 2017-05-18
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1034.1%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 25: Bull Market
+   Duration: 2017-05-19 to 2017-06-07
+   Length: 13 trading days (0.1 years)
+   Annual Return: 222.8%
+   Annual Volatility: 21.9%
+   Sharpe Ratio: 10.19
+   Max Drawdown: -1.3%
+
+PERIOD 26: Goldilocks
+   Duration: 2017-06-08 to 2017-06-09
+   Length: 2 trading days (0.0 years)
+   Annual Return: 40.5%
+   Annual Volatility: 108.6%
+   Sharpe Ratio: 0.37
+   Max Drawdown: -6.5%
+
+PERIOD 27: Bull Market
+   Duration: 2017-06-12 to 2017-06-22
+   Length: 9 trading days (0.0 years)
+   Annual Return: 159.5%
+   Annual Volatility: 19.9%
+   Sharpe Ratio: 8.00
+   Max Drawdown: -0.7%
+
+PERIOD 28: Bear Market
+   Duration: 2017-06-23 to 2017-07-11
+   Length: 12 trading days (0.0 years)
+   Annual Return: -33.3%
+   Annual Volatility: 45.4%
+   Sharpe Ratio: -0.73
+   Max Drawdown: -9.4%
+
+PERIOD 29: Goldilocks
+   Duration: 2017-07-12 to 2017-07-12
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1049.7%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 30: Bull Market
+   Duration: 2017-07-13 to 2017-08-09
+   Length: 20 trading days (0.1 years)
+   Annual Return: 72.3%
+   Annual Volatility: 23.4%
+   Sharpe Ratio: 3.09
+   Max Drawdown: -3.8%
+
+PERIOD 31: Bear Market
+   Duration: 2017-08-10 to 2017-08-11
+   Length: 2 trading days (0.0 years)
+   Annual Return: -1241.5%
+   Annual Volatility: 8.7%
+   Sharpe Ratio: -142.15
+   Max Drawdown: -5.3%
+
+PERIOD 32: Goldilocks
+   Duration: 2017-08-14 to 2017-08-14
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1933.9%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 33: Bull Market
+   Duration: 2017-08-15 to 2017-09-14
+   Length: 22 trading days (0.1 years)
+   Annual Return: 7.8%
+   Annual Volatility: 23.1%
+   Sharpe Ratio: 0.34
+   Max Drawdown: -4.7%
+
+PERIOD 34: Goldilocks
+   Duration: 2017-09-15 to 2017-09-15
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1544.9%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 35: Bear Market
+   Duration: 2017-09-18 to 2017-09-22
+   Length: 5 trading days (0.0 years)
+   Annual Return: -31.2%
+   Annual Volatility: 35.9%
+   Sharpe Ratio: -0.87
+   Max Drawdown: -4.6%
+
+PERIOD 36: Bull Market
+   Duration: 2017-09-25 to 2017-11-28
+   Length: 46 trading days (0.2 years)
+   Annual Return: 89.7%
+   Annual Volatility: 24.8%
+   Sharpe Ratio: 3.61
+   Max Drawdown: -3.2%
+
+PERIOD 37: Bear Market
+   Duration: 2017-11-29 to 2017-12-01
+   Length: 3 trading days (0.0 years)
+   Annual Return: -536.2%
+   Annual Volatility: 59.9%
+   Sharpe Ratio: -8.95
+   Max Drawdown: -1.5%
+
+PERIOD 38: Goldilocks
+   Duration: 2017-12-04 to 2017-12-04
+   Length: 1 trading days (0.0 years)
+   Annual Return: -1445.5%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 39: Bull Market
+   Duration: 2017-12-05 to 2018-01-02
+   Length: 19 trading days (0.1 years)
+   Annual Return: 87.2%
+   Annual Volatility: 24.9%
+   Sharpe Ratio: 3.50
+   Max Drawdown: -4.4%
+
+PERIOD 40: Goldilocks
+   Duration: 2018-01-03 to 2018-01-03
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1606.2%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 41: Bull Market
+   Duration: 2018-01-04 to 2018-01-31
+   Length: 19 trading days (0.1 years)
+   Annual Return: 193.3%
+   Annual Volatility: 21.9%
+   Sharpe Ratio: 8.84
+   Max Drawdown: -1.8%
+
+PERIOD 42: Sideways
+   Duration: 2018-02-01 to 2018-04-25
+   Length: 58 trading days (0.2 years)
+   Annual Return: -54.6%
+   Annual Volatility: 48.7%
+   Sharpe Ratio: -1.12
+   Max Drawdown: -14.5%
+
+PERIOD 43: Bull Market
+   Duration: 2018-04-26 to 2018-08-21
+   Length: 82 trading days (0.3 years)
+   Annual Return: 48.2%
+   Annual Volatility: 27.6%
+   Sharpe Ratio: 1.75
+   Max Drawdown: -11.7%
+
+PERIOD 44: Goldilocks
+   Duration: 2018-08-22 to 2018-08-22
+   Length: 1 trading days (0.0 years)
+   Annual Return: 927.8%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 45: Bull Market
+   Duration: 2018-08-23 to 2018-09-27
+   Length: 25 trading days (0.1 years)
+   Annual Return: 18.0%
+   Annual Volatility: 20.1%
+   Sharpe Ratio: 0.90
+   Max Drawdown: -7.1%
+
+PERIOD 46: Sideways
+   Duration: 2018-09-28 to 2019-02-12
+   Length: 93 trading days (0.4 years)
+   Annual Return: -154.3%
+   Annual Volatility: 74.9%
+   Sharpe Ratio: -2.06
+   Max Drawdown: -56.0%
+
+PERIOD 47: Bull Market
+   Duration: 2019-02-13 to 2019-03-05
+   Length: 14 trading days (0.1 years)
+   Annual Return: 64.5%
+   Annual Volatility: 18.5%
+   Sharpe Ratio: 3.48
+   Max Drawdown: -3.0%
+
+PERIOD 48: Bear Market
+   Duration: 2019-03-06 to 2019-03-08
+   Length: 3 trading days (0.0 years)
+   Annual Return: -321.6%
+   Annual Volatility: 25.6%
+   Sharpe Ratio: -12.58
+   Max Drawdown: -1.8%
+
+PERIOD 49: Goldilocks
+   Duration: 2019-03-11 to 2019-03-11
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1698.0%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 50: Bear Market
+   Duration: 2019-03-12 to 2019-03-22
+   Length: 9 trading days (0.0 years)
+   Annual Return: 270.8%
+   Annual Volatility: 44.6%
+   Sharpe Ratio: 6.07
+   Max Drawdown: -3.5%
+
+PERIOD 51: Goldilocks
+   Duration: 2019-03-25 to 2019-03-25
+   Length: 1 trading days (0.0 years)
+   Annual Return: -533.8%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 52: Bull Market
+   Duration: 2019-03-26 to 2019-04-24
+   Length: 21 trading days (0.1 years)
+   Annual Return: 114.4%
+   Annual Volatility: 20.2%
+   Sharpe Ratio: 5.66
+   Max Drawdown: -3.9%
+
+PERIOD 53: Bear Market
+   Duration: 2019-04-25 to 2019-06-03
+   Length: 27 trading days (0.1 years)
+   Annual Return: -332.1%
+   Annual Volatility: 31.6%
+   Sharpe Ratio: -10.50
+   Max Drawdown: -28.3%
+
+PERIOD 54: Goldilocks
+   Duration: 2019-06-04 to 2019-06-04
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1679.5%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 55: Bull Market
+   Duration: 2019-06-05 to 2019-06-11
+   Length: 5 trading days (0.0 years)
+   Annual Return: 266.0%
+   Annual Volatility: 18.5%
+   Sharpe Ratio: 14.41
+   Max Drawdown: 0.0%
+
+PERIOD 56: Bear Market
+   Duration: 2019-06-12 to 2019-06-17
+   Length: 4 trading days (0.0 years)
+   Annual Return: -243.7%
+   Annual Volatility: 29.5%
+   Sharpe Ratio: -8.27
+   Max Drawdown: -2.4%
+
+PERIOD 57: Goldilocks
+   Duration: 2019-06-18 to 2019-06-18
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1328.4%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 58: Bull Market
+   Duration: 2019-06-19 to 2019-06-25
+   Length: 5 trading days (0.0 years)
+   Annual Return: -46.4%
+   Annual Volatility: 13.4%
+   Sharpe Ratio: -3.46
+   Max Drawdown: -1.7%
+
+PERIOD 59: Goldilocks
+   Duration: 2019-06-26 to 2019-06-26
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1262.1%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 60: Bull Market
+   Duration: 2019-06-27 to 2019-07-30
+   Length: 23 trading days (0.1 years)
+   Annual Return: 106.1%
+   Annual Volatility: 25.5%
+   Sharpe Ratio: 4.15
+   Max Drawdown: -5.4%
+
+PERIOD 61: Goldilocks
+   Duration: 2019-07-31 to 2019-07-31
+   Length: 1 trading days (0.0 years)
+   Annual Return: -985.7%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 62: Sideways
+   Duration: 2019-08-01 to 2019-09-04
+   Length: 24 trading days (0.1 years)
+   Annual Return: 1.3%
+   Annual Volatility: 52.6%
+   Sharpe Ratio: 0.02
+   Max Drawdown: -9.8%
+
+PERIOD 63: Goldilocks
+   Duration: 2019-09-05 to 2019-09-05
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1588.5%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 64: Bull Market
+   Duration: 2019-09-06 to 2020-01-27
+   Length: 98 trading days (0.4 years)
+   Annual Return: 74.8%
+   Annual Volatility: 28.2%
+   Sharpe Ratio: 2.65
+   Max Drawdown: -6.8%
+
+PERIOD 65: Sideways
+   Duration: 2020-01-28 to 2020-11-10
+   Length: 201 trading days (0.8 years)
+   Annual Return: 94.8%
+   Annual Volatility: 63.9%
+   Sharpe Ratio: 1.48
+   Max Drawdown: -37.6%
+
+PERIOD 66: Bull Market
+   Duration: 2020-11-11 to 2021-01-04
+   Length: 36 trading days (0.1 years)
+   Annual Return: 18.8%
+   Annual Volatility: 23.2%
+   Sharpe Ratio: 0.81
+   Max Drawdown: -5.2%
+
+PERIOD 67: Sideways
+   Duration: 2021-01-05 to 2021-05-28
+   Length: 101 trading days (0.4 years)
+   Annual Return: 53.5%
+   Annual Volatility: 45.8%
+   Sharpe Ratio: 1.17
+   Max Drawdown: -24.4%
+
+PERIOD 68: Bull Market
+   Duration: 2021-06-01 to 2021-06-25
+   Length: 19 trading days (0.1 years)
+   Annual Return: 210.3%
+   Annual Volatility: 25.9%
+   Sharpe Ratio: 8.11
+   Max Drawdown: -1.5%
+
+PERIOD 69: Goldilocks
+   Duration: 2021-06-28 to 2021-06-28
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1232.6%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 70: Bull Market
+   Duration: 2021-06-29 to 2021-07-13
+   Length: 10 trading days (0.0 years)
+   Annual Return: 33.2%
+   Annual Volatility: 22.0%
+   Sharpe Ratio: 1.51
+   Max Drawdown: -3.8%
+
+PERIOD 71: Bear Market
+   Duration: 2021-07-14 to 2021-07-20
+   Length: 5 trading days (0.0 years)
+   Annual Return: -425.1%
+   Annual Volatility: 45.5%
+   Sharpe Ratio: -9.34
+   Max Drawdown: -8.5%
+
+PERIOD 72: Goldilocks
+   Duration: 2021-07-21 to 2021-07-21
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1057.9%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 73: Bull Market
+   Duration: 2021-07-22 to 2021-08-16
+   Length: 18 trading days (0.1 years)
+   Annual Return: 38.4%
+   Annual Volatility: 19.6%
+   Sharpe Ratio: 1.96
+   Max Drawdown: -4.5%
+
+PERIOD 74: Bear Market
+   Duration: 2021-08-17 to 2021-08-20
+   Length: 4 trading days (0.0 years)
+   Annual Return: 267.7%
+   Annual Volatility: 54.3%
+   Sharpe Ratio: 4.93
+   Max Drawdown: -2.1%
+
+PERIOD 75: Goldilocks
+   Duration: 2021-08-23 to 2021-08-23
+   Length: 1 trading days (0.0 years)
+   Annual Return: 1345.9%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 76: Bull Market
+   Duration: 2021-08-24 to 2021-09-17
+   Length: 18 trading days (0.1 years)
+   Annual Return: -3.5%
+   Annual Volatility: 19.5%
+   Sharpe Ratio: -0.18
+   Max Drawdown: -4.1%
+
+PERIOD 77: Bear Market
+   Duration: 2021-09-20 to 2021-10-04
+   Length: 11 trading days (0.0 years)
+   Annual Return: -238.8%
+   Annual Volatility: 41.3%
+   Sharpe Ratio: -5.78
+   Max Drawdown: -12.2%
+
+PERIOD 78: Goldilocks
+   Duration: 2021-10-05 to 2021-10-05
+   Length: 1 trading days (0.0 years)
+   Annual Return: 901.9%
+   Annual Volatility: 0.0%
+   Sharpe Ratio: nan
+   Max Drawdown: 0.0%
+
+PERIOD 79: Bull Market
+   Duration: 2021-10-06 to 2021-10-25
+   Length: 14 trading days (0.1 years)
+   Annual Return: 224.4%
+   Annual Volatility: 21.5%
+   Sharpe Ratio: 10.43
+   Max Drawdown: -1.9%
+
+PERIOD 80: Sideways
+   Duration: 2021-10-26 to 2023-03-15
+   Length: 348 trading days (1.4 years)
+   Annual Return: 3.3%
+   Annual Volatility: 62.5%
+   Sharpe Ratio: 0.05
+   Max Drawdown: -66.3%
+
+PERIOD 81: Bull Market
+   Duration: 2023-03-16 to 2023-04-28
+   Length: 31 trading days (0.1 years)
+   Annual Return: 110.3%
+   Annual Volatility: 29.2%
+   Sharpe Ratio: 3.78
+   Max Drawdown: -6.2%
+
+PERIOD 82: Sideways
+   Duration: 2023-05-01 to 2023-11-02
+   Length: 130 trading days (0.5 years)
+   Annual Return: 87.2%
+   Annual Volatility: 49.6%
+   Sharpe Ratio: 1.76
+   Max Drawdown: -18.3%
+
+PERIOD 83: Bull Market
+   Duration: 2023-11-03 to 2024-02-01
+   Length: 61 trading days (0.2 years)
+   Annual Return: 153.2%
+   Annual Volatility: 29.5%
+   Sharpe Ratio: 5.18
+   Max Drawdown: -9.7%
+
+PERIOD 84: Sideways
+   Duration: 2024-02-02 to 2025-05-13
+   Length: 320 trading days (1.3 years)
+   Annual Return: 57.0%
+   Annual Volatility: 59.0%
+   Sharpe Ratio: 0.97
+   Max Drawdown: -36.9%
+
+PERIOD 85: Bull Market
+   Duration: 2025-05-14 to 2025-09-24
+   Length: 92 trading days (0.4 years)
+   Annual Return: 84.7%
+   Annual Volatility: 28.2%
+   Sharpe Ratio: 3.00
+   Max Drawdown: -8.8%
+
+CURRENT MARKET STATUS:
+   Active Regime: Bull Market
+   Regime Started: 2025-05-14
+   Duration So Far: 92 days

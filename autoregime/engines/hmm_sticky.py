@@ -1,5 +1,5 @@
 """
-Sticky HMM engine for AutoRegime (drop-in)
+Sticky HMM engine for AutoRegime
 
 - Robust preprocessing (log-returns, winsorize, robust scale)
 - Sticky transition prior (diag-heavy init) + Viterbi decode
@@ -8,13 +8,18 @@ Sticky HMM engine for AutoRegime (drop-in)
 - Works with a ticker (via yfinance) or a price Series/DataFrame
 
 Public entrypoint (compatible):
-    stable_regime_analysis(assets, start_date=None, end_date=None,
-                           n_components='auto', sticky=0.98,
-                           min_segment_days=20, return_result=True,
-                           random_state=42, verbose=True)
+    stable_regime_analysis(
+        assets,
+        start_date=None, end_date=None,
+        n_components='auto',
+        # NEW: auto-K guardrails so we don't collapse to 2 states
+        k_floor=4, k_cap=6, auto_k_metric="bic",
+        sticky=0.98, min_segment_days=20,
+        return_result=True, random_state=42, verbose=True
+    )
 
 Convenience:
-    stable_report(...) -> str   # returns only the formatted report text
+    stable_report(...) -> str
 """
 from __future__ import annotations
 
@@ -26,7 +31,7 @@ import numpy as np
 import pandas as pd
 
 # Optional dependency: only import if a ticker string is passed
-try:  # pragma: no cover - optional runtime dep
+try:  # pragma: no cover
     import yfinance as yf  # type: ignore
 except Exception:  # pragma: no cover
     yf = None  # noqa: N816
@@ -34,27 +39,21 @@ except Exception:  # pragma: no cover
 from hmmlearn.hmm import GaussianHMM
 from sklearn.preprocessing import RobustScaler
 
-# ---------------------------------------------------------------------
-# Utilities
-# ---------------------------------------------------------------------
-
 TRADING_DAYS = 252
 
 
+# ---------------- Utilities ----------------
 def _annualize_return(daily_returns: pd.Series) -> float:
-    mu = daily_returns.mean() * TRADING_DAYS
-    return float(mu)
+    return float(daily_returns.mean() * TRADING_DAYS)
 
 
 def _annualize_vol(daily_returns: pd.Series) -> float:
-    sig = daily_returns.std(ddof=0) * np.sqrt(TRADING_DAYS)
-    return float(sig)
+    return float(daily_returns.std(ddof=0) * np.sqrt(TRADING_DAYS))
 
 
 def _max_drawdown_from_prices(prices: pd.Series) -> float:
     cummax = prices.cummax()
-    dd = (prices / cummax - 1.0).min()
-    return float(dd)
+    return float((prices / cummax - 1.0).min())
 
 
 def _winsorize(s: pd.Series, p=0.005) -> pd.Series:
@@ -75,43 +74,26 @@ class AnalysisResult:
     meta: dict
 
 
-# ---------------------------------------------------------------------
-# Data loading
-# ---------------------------------------------------------------------
+# ---------------- Data loading ----------------
 def _load_prices(assets: Any, start_date: Optional[str], end_date: Optional[str]) -> pd.DataFrame:
-    """
-    Return a price DataFrame with one column if assets is a single ticker/Series.
-    Handles yfinance returning either a Series or a DataFrame for Close.
-    """
+    """Return a price DataFrame with one column if assets is a single ticker/Series."""
     # Ticker string
     if isinstance(assets, str):
         if yf is None:
-            raise RuntimeError(
-                "yfinance is required to download prices for string tickers. Install with: pip install yfinance"
-            )
+            raise RuntimeError("yfinance is required. Install with: pip install yfinance")
         try:
             df = yf.download(assets, start=start_date, end=end_date, auto_adjust=True, progress=False)
-        except Exception as e:  # network/DNS issues etc.
+        except Exception as e:
             raise RuntimeError(f"Failed to download data for {assets} via yfinance: {e}") from e
-
         if df is None or df.empty:
             raise ValueError(f"No data returned for {assets}.")
-
-        # yfinance can return either:
-        # - DataFrame with columns ['Open','High','Low','Close','Adj Close','Volume']
-        #   where df['Close'] is a Series (usual), OR
-        # - DataFrame where df['Close'] itself is a DataFrame (e.g., multi-ticker pattern or provider quirk)
         close = df["Close"]
-
         if isinstance(close, pd.DataFrame):
-            # Reduce to first column and ensure it's a Series
             if close.shape[1] < 1:
-                raise ValueError(f"No Close price columns returned for {assets}.")
+                raise ValueError(f"No Close columns returned for {assets}.")
             ser = close.iloc[:, 0].astype(float)
         else:
-            # Series path
             ser = close.astype(float)
-
         ser = ser.dropna()
         ser.name = str(assets)
         return pd.DataFrame(ser)
@@ -131,9 +113,7 @@ def _load_prices(assets: Any, start_date: Optional[str], end_date: Optional[str]
     raise TypeError("assets must be a ticker str, pandas Series, or DataFrame of prices")
 
 
-# ---------------------------------------------------------------------
-# Post-processing helpers
-# ---------------------------------------------------------------------
+# ---------------- Post-processing helpers ----------------
 def _min_segment_enforce(states: np.ndarray, min_len: int) -> np.ndarray:
     """Merge too-short runs into neighbors (greedy, forward then backward)."""
     if min_len <= 1:
@@ -151,7 +131,6 @@ def _min_segment_enforce(states: np.ndarray, min_len: int) -> np.ndarray:
         if run_len < min_len:
             left = s[i - 1] if i > 0 else None
             right = s[j + 1] if j + 1 < n else None
-            # Prefer merging into right if available; else left; else keep
             target = right if right is not None else (left if left is not None else s[i])
             s[i : j + 1] = target
         i = j + 1
@@ -172,18 +151,89 @@ def _min_segment_enforce(states: np.ndarray, min_len: int) -> np.ndarray:
     return s
 
 
-def _label_states_by_mean_return(returns: pd.Series, states: np.ndarray) -> dict[int, str]:
+def _label_states_rich(returns: pd.Series, states: np.ndarray) -> dict[int, str]:
+    """
+    Map hidden states to business-friendly labels using μ (mean), σ (vol), and Sharpe.
+
+      • Goldilocks  : highest Sharpe among positive-μ states
+      • Bull Market : highest μ among remaining positive-μ states
+      • Bear Market : lowest μ overall
+      • Sideways    : |μ| near 0 with low σ
+      • Steady Growth: positive μ (not Bull/Goldilocks), moderate σ
+      • Risk-Off    : negative μ with high σ (defensive/volatile)
+
+    If there are fewer than 6 states, we assign a sensible subset.
+    """
     df = pd.DataFrame({"state": states}, index=returns.index).join(returns.rename("r"))
-    means = df.groupby("state")["r"].mean().sort_values()
+    g = df.groupby("state")["r"]
+    stats = pd.DataFrame(
+        {
+            "mu": g.mean(),
+            "sigma": g.std(ddof=0).replace(0, np.nan),
+        }
+    )
+    stats["sharpe"] = stats["mu"] / stats["sigma"]
+
     labels: dict[int, str] = {}
-    k = len(means)
-    for rank, (state, mu) in enumerate(means.items()):
-        if rank == 0:
-            labels[state] = "Bear Market"
-        elif rank == k - 1:
-            labels[state] = "Bull Market"
-        else:
-            labels[state] = "Steady Growth" if mu > 0 else "Correction"
+    remaining = set(stats.index)
+
+    # 1) Goldilocks: positive μ, highest Sharpe
+    pos = stats[stats["mu"] > 0].sort_values("sharpe", ascending=False)
+    if not pos.empty and np.isfinite(pos["sharpe"].iloc[0]):
+        gold = pos.index[0]
+        labels[gold] = "Goldilocks"
+        remaining.discard(gold)
+
+    # 2) Bull: highest μ among remaining positives
+    rem_pos = stats.loc[list(remaining)]
+    rem_pos = rem_pos[rem_pos["mu"] > 0]
+    if not rem_pos.empty:
+        bull = rem_pos["mu"].idxmax()
+        labels[bull] = "Bull Market"
+        remaining.discard(bull)
+
+    # 3) Bear: lowest μ overall among remaining
+    if remaining:
+        bear = stats.loc[list(remaining)]["mu"].idxmin()
+        labels[bear] = "Bear Market"
+        remaining.discard(bear)
+
+    # 4) Sideways: closest μ to 0 with low σ
+    if remaining:
+        rem = stats.loc[list(remaining)].copy()
+        rem["abs_mu"] = np.abs(rem["mu"])
+        med_sigma = stats["sigma"].median()
+        cand = rem[rem["sigma"] <= med_sigma]
+        if cand.empty:
+            cand = rem
+        side = cand.sort_values(["abs_mu", "sigma"], ascending=[True, True]).index[0]
+        labels[side] = "Sideways"
+        remaining.discard(side)
+
+    # 5) Steady Growth: positive μ (not Bull/Goldilocks), moderate σ
+    if remaining:
+        rem = stats.loc[list(remaining)]
+        cand = rem[rem["mu"] > 0]
+        if not cand.empty:
+            # prefer higher Sharpe but not already assigned
+            steady = cand.sort_values(["sharpe", "mu", "sigma"], ascending=[False, False, True]).index[0]
+            labels[steady] = "Steady Growth"
+            remaining.discard(steady)
+
+    # 6) Risk-Off: negative μ, highest σ (if none neg, pick highest σ)
+    if remaining:
+        rem = stats.loc[list(remaining)]
+        cand = rem[rem["mu"] <= 0]
+        if cand.empty:
+            cand = rem
+        risk = cand["sigma"].idxmax()
+        labels[risk] = "Risk-Off"
+        remaining.discard(risk)
+
+    # Any leftover: fallbacks
+    for st in list(remaining):
+        labels[st] = "Correction" if stats.loc[st, "mu"] < 0 else "Neutral"
+
     return labels
 
 
@@ -264,15 +314,17 @@ def _format_report(tl: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------
-# Public entrypoint
-# ---------------------------------------------------------------------
+# ---------------- Public entrypoint ----------------
 def stable_regime_analysis(
     assets: Any,
     *,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     n_components: int | str = "auto",
+    # NEW: guardrails for auto-K so we don't end up with just 2 states
+    k_floor: int = 4,
+    k_cap: int = 6,
+    auto_k_metric: str = "bic",
     sticky: float = 0.98,
     min_segment_days: int = 20,
     return_result: bool = True,
@@ -282,24 +334,23 @@ def stable_regime_analysis(
     """
     Run sticky-HMM regime analysis and return report and timeline.
 
-    If `return_result=True`, returns a dict with key "regime_timeline"
-    to preserve existing callers.
+    - If n_components="auto", we choose K in [k_floor, k_cap] by BIC/AIC (default BIC).
+    - Rich labeling maps hidden states to: Goldilocks / Bull / Steady Growth / Sideways / Risk-Off / Bear (subset if K < 6).
     """
     # Load prices and compute daily log-returns
     px = _load_prices(assets, start_date, end_date)
     if px.shape[1] != 1:
-        # For now, reduce to the first column; multivariate can be added later
         px = px.iloc[:, [0]]
     prices = px.iloc[:, 0].dropna().astype(float)
     returns = _compute_returns(prices)
 
-    # Preprocess: winsorize + robust scale to make HMM happy
+    # Preprocess: winsorize + robust scale
     r_w = _winsorize(returns, p=0.005)
     scaler = RobustScaler()
     X = scaler.fit_transform(r_w.values.reshape(-1, 1)).astype(float)
 
-    # Choose K automatically (simple BIC sweep) if needed
-    def _bic_for_k(k: int) -> float:
+    # --- Auto-K selection with floor/ceiling ---
+    def _ic_for_k(k: int, metric: str = "bic") -> float:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             model = GaussianHMM(
@@ -309,7 +360,7 @@ def stable_regime_analysis(
                 tol=1e-4,
                 random_state=random_state,
                 algorithm="viterbi",
-                init_params="mc",  # keep our startprob_ and transmat_
+                init_params="mc",
             )
             # Sticky prior via diag-heavy transmat init
             trans = np.full((k, k), (1 - sticky) / (k - 1))
@@ -317,21 +368,24 @@ def stable_regime_analysis(
             model.startprob_ = np.full(k, 1.0 / k)
             model.transmat_ = trans
             model.fit(X)
-            # BIC = -2 logL + p logN
             logL = model.score(X)
-            # parameters ~ means(k) + covars(k) + trans(k*k) naive count
+            # naive parameter count
             p = k + k + k * k
-            bic = -2 * logL + p * np.log(len(X))
-            return float(bic)
+            if metric == "aic":
+                return float(-2 * logL + 2 * p)
+            # default bic
+            return float(-2 * logL + p * np.log(len(X)))
 
     if isinstance(n_components, str) and n_components == "auto":
-        candidate_ks = [2, 3, 4, 5, 6]
-        bics = {k: _bic_for_k(k) for k in candidate_ks}
-        K = min(bics, key=bics.get)
+        lo = max(2, int(k_floor))
+        hi = max(lo, int(k_cap))
+        candidate_ks = list(range(lo, hi + 1))
+        ics = {k: _ic_for_k(k, auto_k_metric.lower()) for k in candidate_ks}
+        K = min(ics, key=ics.get)
     else:
         K = int(n_components)
 
-    # Final model fit with chosen K
+    # --- Final fit with chosen K ---
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         model = GaussianHMM(
@@ -341,7 +395,7 @@ def stable_regime_analysis(
             tol=1e-4,
             random_state=random_state,
             algorithm="viterbi",
-            init_params="mc",  # keep our startprob_ and transmat_
+            init_params="mc",
         )
         trans = np.full((K, K), (1 - sticky) / (K - 1))
         np.fill_diagonal(trans, sticky)
@@ -353,8 +407,8 @@ def stable_regime_analysis(
     # Enforce minimum segment length
     states = _min_segment_enforce(states, min_segment_days)
 
-    # Label states by mean return
-    labels = _label_states_by_mean_return(returns.iloc[: len(states)], states)
+    # Rich labels (μ, σ, Sharpe)
+    labels = _label_states_rich(returns.iloc[: len(states)], states)
 
     # Build timeline
     tl = _build_timeline(
@@ -369,31 +423,28 @@ def stable_regime_analysis(
     meta = {
         "method": "hmm_sticky",
         "n_components": K,
+        "k_floor": k_floor,
+        "k_cap": k_cap,
+        "auto_k_metric": auto_k_metric,
         "sticky": sticky,
         "min_segment_days": min_segment_days,
         "random_state": random_state,
+        "labeler": "mu_sigma_sharpe_v1",
+        "states_present": int(len(set(states.tolist()))),
     }
 
     result = AnalysisResult(report=report, timeline=tl, meta=meta)
 
     if return_result:
-        # Preserve older calling style ar.stable_regime_analysis(...)["regime_timeline"]
         regime_timeline = tl.to_dict(orient="records")
         return {"report": report, "regime_timeline": regime_timeline, "meta": meta}
     else:
         return report
 
 
-# ---------------------------------------------------------------------
-# Convenience helper (ADD BELOW stable_regime_analysis — not inside it)
-# ---------------------------------------------------------------------
+# ---------------- Convenience ----------------
 def stable_report(*args, **kwargs) -> str:
-    """
-    Convenience wrapper that returns only the human-readable report text.
-    Usage:
-        import autoregime as ar
-        print(ar.stable_report("SPY", start_date="2015-01-01"))
-    """
+    """Return only the human-readable report text."""
     kwargs["return_result"] = True
     res = stable_regime_analysis(*args, **kwargs)
     return res["report"]
