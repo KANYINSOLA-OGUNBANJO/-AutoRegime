@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autoregime"
+version = "0.1.0"
+description = "Automatic market regime detection with HMM, BOCPD, and CPD"
+readme = "README.md"
+authors = [{ name = "Kanyinsola Ogunbanjo", email="kanyinsolaogunbanjo@gmail.com" }]
+requires-python = ">=3.9"
+dependencies = [
+  "numpy>=1.23", "pandas>=2.0", "scikit-learn>=1.2", "hmmlearn>=0.2.8",
+  "matplotlib>=3.7", "plotly>=5.0", "streamlit>=1.32", "yfinance>=0.2.0",
+  "fastapi>=0.110", "uvicorn>=0.24"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "ruff", "mypy", "types-requests", "pandas-stubs", "requests"]
+app = ["streamlit"]
+
+[project.scripts]
+autoregime = "autoregime.cli:main"
+
+[tool.setuptools.packages.find]
+exclude = ["benchmarks", "notebooks", "tests", "docs"]

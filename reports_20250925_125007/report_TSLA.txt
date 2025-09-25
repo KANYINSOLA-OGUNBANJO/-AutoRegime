@@ -1,0 +1,15 @@
+REGIME ANALYSIS
+================
+
+PERIOD 1: Bull Market
+   Duration: 2018-01-03 to 2024-12-30
+   Length: 1759 trading days (7.0 years)
+   Annual Return: 42.6%
+   Annual Volatility: 63.5%
+   Sharpe Ratio: 0.67
+   Max Drawdown: -73.6%
+
+CURRENT MARKET STATUS:
+   Active Regime: Bull Market
+   Regime Started: 2018-01-03
+   Duration So Far: 1759 days
