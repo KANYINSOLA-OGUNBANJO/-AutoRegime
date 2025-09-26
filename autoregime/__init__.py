@@ -1,21 +1,36 @@
 # autoregime/__init__.py
 from __future__ import annotations
+
 from typing import Any, Optional, Dict, Iterable
+import pandas as _pd
 
+# -----------------------------------------------------------------------------
+# Package metadata (used by app, API server, etc.)
+# -----------------------------------------------------------------------------
 __version__ = "0.1.0"
+__author__ = "Kanyinsola Ogunbanjo"
+__description__ = (
+    "Automatic market regime detection (HMM + BOCPD) with stability-first defaults"
+)
 
-# ===== Engines =====
+# -----------------------------------------------------------------------------
+# Engines
+# -----------------------------------------------------------------------------
 from .engines.hmm_sticky import (
     stable_regime_analysis as _hmm_analyze,
     stable_report as _hmm_report,
 )
 
 try:
+    # Optional engine; ok if missing
     from .engines.bocpd import bocpd_regime_analysis as _bocpd_analyze  # type: ignore[attr-defined]
 except Exception:
     _bocpd_analyze = None  # optional
 
-# ===== Unified API =====
+
+# -----------------------------------------------------------------------------
+# Unified API
+# -----------------------------------------------------------------------------
 def stable_regime_analysis(
     assets: Any,
     *,
@@ -26,6 +41,13 @@ def stable_regime_analysis(
     verbose: bool = False,
     **kwargs,
 ) -> Dict:
+    """
+    Unified entrypoint that routes to the selected engine and returns a dict with:
+      - "report": str
+      - "regime_timeline": list[dict]   (canonical timeline for all engines)
+      - "meta": dict
+    Some engines may also include convenience keys like "timeline" or "current_status".
+    """
     m = (method or "hmm").lower()
 
     if m == "hmm":
@@ -65,6 +87,10 @@ def stable_report(
     verbose: bool = False,
     **kwargs,
 ) -> str:
+    """
+    Convenience: return only the human-readable report string.
+    Uses the HMM engine directly for speed; for other engines, routes via the unified API.
+    """
     m = (method or "hmm").lower()
     if m == "hmm":
         return _hmm_report(
@@ -81,14 +107,15 @@ def stable_report(
     )
     return res.get("report", "")
 
-# ===== Back-compat shims for older scripts/tests =====
-import pandas as _pd
 
+# -----------------------------------------------------------------------------
+# Back-compat shims for older scripts/tests
+# -----------------------------------------------------------------------------
 class MarketDataLoader:
     @staticmethod
     def _ensure_yf():
         try:
-            import yfinance as yf
+            import yfinance as yf  # type: ignore
             return yf
         except Exception as e:
             raise RuntimeError("yfinance is required for MarketDataLoader") from e
@@ -264,7 +291,9 @@ class AutoRegimeDetector:
         return str(self.last_result.get("report", ""))
 
 
-# ===== Super-simple quick helper expected by tests =====
+# -----------------------------------------------------------------------------
+# Super-simple quick helper expected by tests and smoke checks
+# -----------------------------------------------------------------------------
 def reliable_quick_analysis(
     symbol: str,
     start: str = "2019-01-01",
@@ -306,4 +335,6 @@ __all__ = [
     "MarketDataLoader",
     "reliable_quick_analysis",
     "__version__",
+    "__author__",
+    "__description__",
 ]
