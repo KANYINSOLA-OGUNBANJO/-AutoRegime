@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 *.so
 .Python
+
+# Build artifacts
 build/
 develop-eggs/
 dist/
@@ -19,22 +21,47 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+pip-wheel-metadata/
 
-# Virtual Environment
+# Virtual Environments
 autoregime_env/
 venv/
 env/
+.venv/
 
-# IDE
+# IDE / Editor
 .vscode/
 .idea/
 *.swp
 *.swo
 
+# Tests / Coverage / Linters
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# App runtime (Streamlit)
+.streamlit/
+
 # Data files
 *.csv
 data/
 cache/
+
+# Benchmarks outputs (keep repo clean)
+benchmarks/reports/
+benchmarks/out/
+benchmarks/**/*.csv
+benchmarks/**/*.png
+
+# Logs
+*.log
 
 # OS
 .DS_Store
