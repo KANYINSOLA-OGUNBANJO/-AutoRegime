@@ -1,36 +1,36 @@
 # autoregime/__init__.py
 from __future__ import annotations
-
 from typing import Any, Optional, Dict, Iterable
 import pandas as _pd
 
-# -----------------------------------------------------------------------------
-# Package metadata (used by app, API server, etc.)
-# -----------------------------------------------------------------------------
-__version__ = "0.1.0"
-__author__ = "Kanyinsola Ogunbanjo"
-__description__ = (
-    "Automatic market regime detection (HMM + BOCPD) with stability-first defaults"
-)
+"""
+AutoRegime public API.
 
-# -----------------------------------------------------------------------------
-# Engines
-# -----------------------------------------------------------------------------
+Exports:
+- stable_regime_analysis()  # unified entrypoint (HMM default, optional BOCPD)
+- stable_report()           # convenience: just the text report
+- reliable_quick_analysis() # tiny helper used by tests / quick checks
+- MarketDataLoader          # legacy/back-compat shim
+- AutoRegimeDetector        # legacy/back-compat shim
+"""
+
+__version__ = "0.1.0"  # keep in sync with pyproject.toml
+__description__ = "Automatic market regime detection with HMM and BOCPD"
+__author__ = "Kanyinsola Ogunbanjo"
+
+# ===== Engines =====
 from .engines.hmm_sticky import (
     stable_regime_analysis as _hmm_analyze,
     stable_report as _hmm_report,
 )
 
 try:
-    # Optional engine; ok if missing
     from .engines.bocpd import bocpd_regime_analysis as _bocpd_analyze  # type: ignore[attr-defined]
 except Exception:
     _bocpd_analyze = None  # optional
 
 
-# -----------------------------------------------------------------------------
-# Unified API
-# -----------------------------------------------------------------------------
+# ===== Unified API =====
 def stable_regime_analysis(
     assets: Any,
     *,
@@ -42,11 +42,8 @@ def stable_regime_analysis(
     **kwargs,
 ) -> Dict:
     """
-    Unified entrypoint that routes to the selected engine and returns a dict with:
-      - "report": str
-      - "regime_timeline": list[dict]   (canonical timeline for all engines)
-      - "meta": dict
-    Some engines may also include convenience keys like "timeline" or "current_status".
+    Unified entrypoint that routes to the selected engine.
+    Returns a dict with keys at least: "report", "regime_timeline", "meta".
     """
     m = (method or "hmm").lower()
 
@@ -88,14 +85,14 @@ def stable_report(
     **kwargs,
 ) -> str:
     """
-    Convenience: return only the human-readable report string.
-    Uses the HMM engine directly for speed; for other engines, routes via the unified API.
+    Convenience helper: returns only the human-readable report text.
     """
     m = (method or "hmm").lower()
     if m == "hmm":
         return _hmm_report(
             assets, start_date=start_date, end_date=end_date, verbose=verbose, **kwargs
         )
+
     res = stable_regime_analysis(
         assets,
         method=method,
@@ -108,14 +105,12 @@ def stable_report(
     return res.get("report", "")
 
 
-# -----------------------------------------------------------------------------
-# Back-compat shims for older scripts/tests
-# -----------------------------------------------------------------------------
+# ===== Back-compat shims for older scripts/tests =====
 class MarketDataLoader:
     @staticmethod
     def _ensure_yf():
         try:
-            import yfinance as yf  # type: ignore
+            import yfinance as yf
             return yf
         except Exception as e:
             raise RuntimeError("yfinance is required for MarketDataLoader") from e
@@ -291,9 +286,7 @@ class AutoRegimeDetector:
         return str(self.last_result.get("report", ""))
 
 
-# -----------------------------------------------------------------------------
-# Super-simple quick helper expected by tests and smoke checks
-# -----------------------------------------------------------------------------
+# ===== Super-simple quick helper expected by tests =====
 def reliable_quick_analysis(
     symbol: str,
     start: str = "2019-01-01",
@@ -304,7 +297,7 @@ def reliable_quick_analysis(
     **kwargs,
 ):
     """
-    Quick wrapper used by reliability tests. By default returns the current
+    Quick wrapper for tests and demos. By default returns the current
     regime label (string). If return_label=False, returns a dict with details.
     """
     res = stable_regime_analysis(
@@ -335,6 +328,6 @@ __all__ = [
     "MarketDataLoader",
     "reliable_quick_analysis",
     "__version__",
-    "__author__",
     "__description__",
+    "__author__",
 ]
