@@ -197,6 +197,293 @@ No data → check ticker & date range; Yahoo sometimes hiccups.
 
 Extreme annualized numbers → very short windows can look wild; widen the range for stability.
 
+Data & Frequency
+
+Prices: Adjusted close (splits/dividends) from Yahoo Finance via yfinance.
+
+Calendar: Business days only (NYSE), as returned by the provider.
+
+Returns & Preprocessing
+
+Daily returns:
+
+𝑟
+𝑡
+=
+ln
+⁡
+(
+𝑃
+𝑡
+𝑃
+𝑡
+−
+1
+)
+r
+t
+	​
+
+=ln(
+P
+t−1
+	​
+
+P
+t
+	​
+
+	​
+
+) (daily log returns)
+
+Winsorization:
+Clip tails at the 0.5% / 99.5% quantiles to dampen outliers.
+
+Trading days constant: 
+𝑁
+=
+252
+N=252.
+
+Dynamic Risk-Free (FRED GS10)
+
+Source: FRED series GS10 (10-year UST constant maturity), annualized percent.
+
+Convert to daily (continuous compounding):
+
+rf
+daily
+=
+ln
+⁡
+ ⁣
+(
+1
++
+GS10
+100
+⋅
+252
+)
+rf
+daily
+	​
+
+=ln(1+
+100⋅252
+GS10
+	​
+
+)
+
+Alignment: Forward-fill GS10 to trading days (no peeking).
+
+Excess Returns (for Sharpe & Vol)
+
+𝑟
+𝑡
+𝑥
+=
+𝑟
+𝑡
+−
+rf
+daily
+(
+𝑡
+)
+r
+t
+x
+	​
+
+=r
+t
+	​
+
+−rf
+daily
+	​
+
+(t)
+
+Annualization & Metrics
+
+Annualized mean (excess):
+
+𝜇
+ann
+=
+252
+⋅
+mean
+(
+𝑟
+𝑡
+𝑥
+)
+μ
+ann
+	​
+
+=252⋅mean(r
+t
+x
+	​
+
+)
+
+Annualized volatility (excess):
+
+𝜎
+ann
+=
+252
+⋅
+stdev
+population
+(
+𝑟
+𝑡
+𝑥
+)
+σ
+ann
+	​
+
+=
+252
+	​
+
+⋅stdev
+population
+	​
+
+(r
+t
+x
+	​
+
+)
+(population std: ddof=0)
+
+Sharpe Ratio (excess Rf):
+
+Sharpe
+=
+𝜇
+ann
+/
+𝜎
+ann
+Sharpe=μ
+ann
+	​
+
+/σ
+ann
+	​
+
+
+Period return (simple):
+
+𝑅
+period
+=
+𝑃
+end
+𝑃
+start
+−
+1
+R
+period
+	​
+
+=
+P
+start
+	​
+
+P
+end
+	​
+
+	​
+
+−1
+
+Max Drawdown (close-to-close, within segment):
+
+MDD
+=
+min
+⁡
+𝑡
+(
+𝑃
+𝑡
+max
+⁡
+𝜏
+≤
+𝑡
+𝑃
+𝜏
+−
+1
+)
+MDD=min
+t
+	​
+
+(
+max
+τ≤t
+	​
+
+P
+τ
+	​
+
+P
+t
+	​
+
+	​
+
+−1)
+
+CAGR (computed, usually hidden):
+From prices over the segment; shown only for segments ≥ 90 trading days and when explicitly enabled.
+
+Engines (high level)
+
+HMM (sticky): Gaussian HMM with diagonal-heavy transition priors; iterative enforcement of a minimum segment length.
+
+BOCPD (online): Hazard-tuned change-point flags → segments → same metric pipeline as HMM.
+
+Labels: State-level (μ, σ, Sharpe) with segment-level override to avoid mislabeling strong runs as “Sideways”.
+
+Code References
+
+Core functions live in autoregime/reporting/common.py:
+
+compute_log_returns, winsorize
+
+get_daily_risk_free (FRED GS10 → daily cc)
+
+annualize_return_mean, annualize_vol
+
+max_drawdown_from_prices, total_return_from_prices
+
+build_timeline_from_state_runs (makes the timeline & metrics)
+
+format_report (human-readable output)
+
+Note: If FRED is unreachable, get_daily_risk_free gracefully falls back to 0 so the app never breaks.
+
 🔧 Dev Notes
 Python 3.9+
 
@@ -215,5 +502,6 @@ MIT
 Kanyinsola Ogunbanjo — Finance Professional
 📧 kanyinsolaogunbanjo@gmail.com
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
+
 
 If AutoRegime helps your workflow, please ⭐ the repo and share feedback or issues!
