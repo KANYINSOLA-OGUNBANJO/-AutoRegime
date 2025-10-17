@@ -1,9 +1,8 @@
-pandas>=1.3.0
-numpy>=1.21.0
-scikit-learn>=1.0.0
-hmmlearn>=0.2.7
-matplotlib>=3.5.0
-plotly>=5.0.0
-streamlit>=1.10.0
-yfinance>=0.1.87
-seaborn>=0.11.0
+numpy>=1.23
+pandas>=2.0
+scikit-learn>=1.2
+hmmlearn>=0.2.8
+yfinance>=0.2
+pandas_datareader>=0.10
+plotly>=5.0
+streamlit>=1.32
