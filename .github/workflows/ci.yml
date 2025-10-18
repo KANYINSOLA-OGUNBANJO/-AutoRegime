@@ -1,10 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  push: { branches: [ main ] }
+  pull_request: { branches: [ main ] }
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -15,8 +13,6 @@ jobs:
     name: Smoke (import + tiny nowcast)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      AR_SMOKE_REAL: "0"   # keep network optional; flip to "1" to probe Yahoo/FRED
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -27,14 +23,60 @@ jobs:
           python-version: '3.11'
           cache: pip
 
-      - name: Upgrade pip & install
+      - name: Install
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
+          # Editable install so package-style imports resolve
           pip install -e .
 
       - name: Show pip freeze (debug)
         run: pip freeze
 
-      - name: Run smoke script
-        run: python scripts/ci_smoke.py
+      - name: Run synthetic smoke (no network)
+        run: |
+          python - <<'PY'
+          import sys, platform, traceback
+          print("=== ENV ===")
+          print("Python:", sys.version.replace("\n"," "))
+          print("OS    :", platform.platform())
+
+          try:
+              import numpy as np, pandas as pd
+              import autoregime as ar
+              import importlib
+              # Verify engines import cleanly
+              importlib.import_module("autoregime.engines.hmm_sticky")
+              importlib.import_module("autoregime.engines.bocpd")
+              print("Imports OK")
+          except Exception as e:
+              print("Import error:", e)
+              print(traceback.format_exc()); sys.exit(1)
+
+          # Synthetic series (no Yahoo/FRED)
+          idx = pd.bdate_range("2022-01-03", periods=180)
+          rng = np.random.default_rng(42)
+          r = rng.normal(0.0006, 0.01, size=len(idx))
+          px = pd.Series(100.0 * np.exp(np.cumsum(r)), index=idx, name="SYN")
+
+          def run(method):
+              try:
+                  res = ar.stable_regime_analysis(px, method=method, return_result=True)
+                  tl = pd.DataFrame(res.get("regime_timeline", []))
+                  ok = (not tl.empty) and ("label" in tl.columns)
+                  print(f"[{method}] timeline rows:", len(tl), "OK=", ok)
+                  if not ok:
+                      print("Timeline sample:", tl.head(3).to_dict(orient="records"))
+                  return ok
+              except Exception as e:
+                  print(f"[{method}] ERROR:", e)
+                  print(traceback.format_exc())
+                  return False
+
+          ok_hmm = run("hmm")
+          ok_bcp = run("bocpd")
+
+          if not (ok_hmm and ok_bcp):
+              print("Smoke failed"); sys.exit(1)
+          print("Smoke passed")
+          PY

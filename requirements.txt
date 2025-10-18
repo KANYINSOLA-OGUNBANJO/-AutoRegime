@@ -1,15 +1,11 @@
-# Numerics pinned for stability on GitHub Actions (Py3.11)
 numpy==1.26.4
 scipy==1.11.4
 pandas==2.2.2
 scikit-learn==1.4.2
 hmmlearn==0.2.8
 
-# Data + app
-yfinance>=0.2.38
+yfinance>=0.2
 pandas_datareader>=0.10
 plotly>=5.0
 streamlit>=1.32
-
-# Misc
 requests>=2.31
