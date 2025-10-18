@@ -188,3 +188,16 @@ from autoregime.reporting.common import get_daily_risk_free
 import pandas as pd
 rf = get_daily_risk_free("2025-05-01","2025-10-01")
 print(rf.head(), rf.tail())  # non-zero values → GS10 pulled; zeros → fell back (network/FRED issue)
+
+License
+
+MIT
+
+Author
+
+Kanyinsola Ogunbanjo — Finance Professional
+📧 kanyinsolaogunbanjo@gmail.com
+
+🐙 GitHub: @KANYINSOLA-OGUNBANJO
+
+If AutoRegime helps your workflow, please ⭐ the repo and share feedback or issues!
