@@ -1,68 +1,27 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-
-# Build artifacts
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+*.pyo
+*.pyd
 *.egg-info/
-.installed.cfg
 *.egg
-pip-wheel-metadata/
+.env
+.venv
+.conda
+.DS_Store
 
-# Virtual Environments
-autoregime_env/
-venv/
-env/
-.venv/
-
-# IDE / Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Tests / Coverage / Linters
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.mypy_cache/
-.ruff_cache/
-
-# Notebooks
+# Jupyter
 .ipynb_checkpoints/
 
-# App runtime (Streamlit)
+# Streamlit
 .streamlit/
 
-# Data files
+# Data / outputs
 *.csv
-data/
-cache/
-
-# Benchmarks outputs (keep repo clean)
+*.parquet
 benchmarks/reports/
-benchmarks/out/
-benchmarks/**/*.csv
-benchmarks/**/*.png
+reports_*/
 
-# Logs
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
+# Builds
+dist/
+build/

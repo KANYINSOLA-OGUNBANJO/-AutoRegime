@@ -8,26 +8,25 @@ on:
 
 jobs:
   smoke:
-    name: Smoke (import + tiny nowcast)
+    name: Smoke (import + offline nowcast)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Install
+      - name: Install package + test deps
         run: |
           python -m pip install --upgrade pip
-          # Install the package + runtime deps (no dev tools needed for smoke)
+          # Install your package and lightweight dev tools
           pip install -e .
-          # Ensure core deps present (belt & suspenders)
-          pip install numpy pandas hmmlearn scikit-learn yfinance pandas_datareader
+          pip install pytest
 
       - name: Run offline smoke test
-        env:
-          AUTOREGIME_CI: "1"   # engines can read this if needed
         run: |
-          python scripts/ci_smoke.py
+          python -m script.ci_smoke
