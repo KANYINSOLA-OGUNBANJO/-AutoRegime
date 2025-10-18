@@ -1,108 +1,51 @@
 # scripts/ci_smoke.py
 from __future__ import annotations
-import os, sys, platform, traceback
-import pandas as pd
+import os, sys
 import numpy as np
+import pandas as pd
 
-AR_SMOKE_REAL = os.environ.get("AR_SMOKE_REAL", "0") == "1"  # default: synthetic-only
+# Force engines to behave deterministically in CI (no net, fixed seed)
+os.environ["AUTOREGIME_CI"] = "1"
+np.random.seed(7)
 
-def env_info():
-    print("=== ENV INFO ===")
-    print("Python :", sys.version.replace("\n"," "))
-    print("OS      :", platform.platform())
-    try:
-        import numpy, pandas, sklearn, hmmlearn
-        print("numpy  :", numpy.__version__)
-        print("pandas :", pandas.__version__)
-        print("sklearn:", sklearn.__version__)
-        print("hmmlearn:", hmmlearn.__version__)
-    except Exception as e:
-        print("Version probe error:", e)
-    print("================\n")
+import autoregime as ar  # must import AFTER env is set
 
-def preflight_import():
-    print("=== PREFLIGHT IMPORT autoregime ===")
-    try:
-        import autoregime as ar
-        import inspect
-        print("autoregime file:", inspect.getsourcefile(ar))
-        print("autoregime version:", getattr(ar, "__version__", "(none)"))
-        # Verify engines import
-        try:
-            import importlib
-            importlib.import_module("autoregime.engines.hmm_sticky")
-            print("HMM engine import: OK")
-            importlib.import_module("autoregime.engines.bocpd")
-            print("BOCPD engine import: OK")
-        except Exception as e:
-            print("Engine import error:", e)
-            print(traceback.format_exc())
-            return False
-        print("===============================\n")
-        return True
-    except Exception as e:
-        print("Import error:", e)
-        print(traceback.format_exc())
-        return False
+TRADING_DAYS = 252
 
-def try_report(method: str, ticker: str) -> bool:
-    import autoregime as ar
-    try:
-        txt = ar.stable_report(ticker, start_date="2019-01-01", method=method)
-        head = (txt or "").splitlines()[:12]
-        print(f"\n--- REAL DATA {method.upper()} — {ticker} ---")
-        for line in head:
-            print(line)
-        return True
-    except Exception as e:
-        print(f"\n--- REAL DATA {method.upper()} — {ticker} ERROR ---")
-        print(e)
-        print(traceback.format_exc())
-        return False
+def make_geo_walk(n_days: int = 500, mu_ann: float = 0.10, vol_ann: float = 0.20, p0: float = 100.0) -> pd.Series:
+    """Synthetic positive price series (geometric random walk)."""
+    mu_d  = mu_ann / TRADING_DAYS
+    vol_d = vol_ann / np.sqrt(TRADING_DAYS)
+    r = np.random.normal(mu_d, vol_d, size=n_days)
+    px = p0 * np.exp(np.cumsum(r))
+    idx = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=n_days)
+    s = pd.Series(px, index=idx, name="SYN")
+    return s
 
-def synthetic_check(method: str) -> bool:
-    """Always run synthetic (no network)."""
-    import autoregime as ar
-    idx = pd.bdate_range("2022-01-03", periods=180)
-    rng = np.random.default_rng(42)
-    r = rng.normal(0.0006, 0.01, size=len(idx))
-    px = pd.Series(100.0 * np.exp(np.cumsum(r)), index=idx, name="SYN")
-    try:
-        res = ar.stable_regime_analysis(px, method=method, return_result=True)
-        tl = pd.DataFrame(res.get("regime_timeline", []))
-        ok = (not tl.empty) and ("label" in tl.columns)
-        print(f"\n--- SYNTHETIC {method.upper()} --- OK={ok} rows={len(tl)}")
-        return ok
-    except Exception as e:
-        print(f"\n--- SYNTHETIC {method.upper()} ERROR ---")
-        print(e)
-        print(traceback.format_exc())
-        return False
+def run_one(method: str) -> str:
+    s = make_geo_walk(n_days=500, mu_ann=0.12 if method=="hmm" else 0.08, vol_ann=0.22, p0=100.0)
+    txt = ar.stable_report(s, start_date=str(s.index[0].date()), end_date=str(s.index[-1].date()), method=method)
+    if not isinstance(txt, str) or len(txt.strip()) == 0:
+        raise RuntimeError(f"{method} returned empty report")
+    # cheap sanity: ensure a couple of key lines exist
+    must_have = ["REGIME ANALYSIS", "PERIOD", "CURRENT MARKET STATUS"]
+    for m in must_have:
+        if m not in txt:
+            raise RuntimeError(f"{method} report missing '{m}'")
+    return txt
 
 def main():
-    env_info()
-    if not preflight_import():
-        sys.exit(1)
-
-    methods = ["hmm", "bocpd"]
-    all_ok = True
-
-    # Always verify engines work on synthetic data (no network).
-    for m in methods:
-        ok = synthetic_check(m)
-        all_ok = all_ok and ok
-
-    # Optional real-data probe (won't fail CI if network flaps).
-    if AR_SMOKE_REAL:
-        for m in methods:
-            for t in ["SPY", "UUP"]:
-                _ = try_report(m, t)  # diagnostics only
-
-    if not all_ok:
-        print("\nSmoke failed (see logs above).")
-        sys.exit(1)
-
-    print("\nAll smoke checks passed.")
+    ok = True
+    for m in ["hmm", "bocpd"]:
+        try:
+            rep = run_one(m)
+            print(f"\n=== {m.upper()} SMOKE OK ===")
+            print(rep.splitlines()[0])
+        except Exception as e:
+            ok = False
+            print(f"\n=== {m.upper()} SMOKE FAIL ===")
+            print("ERROR:", e, file=sys.stderr)
+    sys.exit(0 if ok else 1)
 
 if __name__ == "__main__":
     main()
