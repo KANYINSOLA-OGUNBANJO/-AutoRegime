@@ -1,4 +1,4 @@
-# Numerics (pinned for wheel stability on GitHub Actions)
+# Numerics pinned for stability on GitHub Actions (Py3.11)
 numpy==1.26.4
 scipy==1.11.4
 pandas==2.2.2
@@ -11,5 +11,5 @@ pandas_datareader>=0.10
 plotly>=5.0
 streamlit>=1.32
 
-# Optional utilities (safe to have)
+# Misc
 requests>=2.31
