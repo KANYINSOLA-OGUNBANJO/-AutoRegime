@@ -9,6 +9,14 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+# --- make sure repo root is on sys.path (for Streamlit Cloud) ---
+import os, sys
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+import autoregime as ar  # <-- your original import
+
 import autoregime as ar
 
 # --- must be the first Streamlit call ---
