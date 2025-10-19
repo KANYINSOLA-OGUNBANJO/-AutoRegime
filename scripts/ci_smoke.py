@@ -1,51 +1,38 @@
-# scripts/ci_smoke.py
+# script/ci_smoke.py
 from __future__ import annotations
-import os, sys
-import numpy as np
-import pandas as pd
+import numpy as np, pandas as pd
+import autoregime as ar
 
-# Force engines to behave deterministically in CI (no net, fixed seed)
-os.environ["AUTOREGIME_CI"] = "1"
-np.random.seed(7)
+def make_prices(n=400, seed=42, start=100.0):
+    rng = np.random.default_rng(seed)
+    r = np.r_[rng.normal(0.0005, 0.01, 150),
+              rng.normal(-0.0003, 0.015, 100),
+              rng.normal(0.0008, 0.012, 150)]
+    px = pd.Series(np.exp(np.cumsum(r)) * start,
+                   index=pd.bdate_range("2020-01-02", periods=len(r)))
+    return px
 
-import autoregime as ar  # must import AFTER env is set
-
-TRADING_DAYS = 252
-
-def make_geo_walk(n_days: int = 500, mu_ann: float = 0.10, vol_ann: float = 0.20, p0: float = 100.0) -> pd.Series:
-    """Synthetic positive price series (geometric random walk)."""
-    mu_d  = mu_ann / TRADING_DAYS
-    vol_d = vol_ann / np.sqrt(TRADING_DAYS)
-    r = np.random.normal(mu_d, vol_d, size=n_days)
-    px = p0 * np.exp(np.cumsum(r))
-    idx = pd.bdate_range(end=pd.Timestamp.today().normalize(), periods=n_days)
-    s = pd.Series(px, index=idx, name="SYN")
-    return s
-
-def run_one(method: str) -> str:
-    s = make_geo_walk(n_days=500, mu_ann=0.12 if method=="hmm" else 0.08, vol_ann=0.22, p0=100.0)
-    txt = ar.stable_report(s, start_date=str(s.index[0].date()), end_date=str(s.index[-1].date()), method=method)
-    if not isinstance(txt, str) or len(txt.strip()) == 0:
-        raise RuntimeError(f"{method} returned empty report")
-    # cheap sanity: ensure a couple of key lines exist
-    must_have = ["REGIME ANALYSIS", "PERIOD", "CURRENT MARKET STATUS"]
-    for m in must_have:
-        if m not in txt:
-            raise RuntimeError(f"{method} report missing '{m}'")
-    return txt
+def run_one(method: str):
+    prices = make_prices()
+    res = ar.stable_regime_analysis(
+        prices, method=method, start_date=None, end_date=None,
+        return_result=True, verbose=False, min_segment_days=20
+    )
+    assert isinstance(res, dict), "Result must be a dict"
+    tl = pd.DataFrame(res.get("regime_timeline", []))
+    assert not tl.empty, f"{method}: empty timeline"
+    needed = {"period_index","label","start","end","trading_days","ann_vol","max_drawdown","period_return"}
+    missing = needed - set(tl.columns)
+    assert not missing, f"{method}: missing columns {missing}"
+    for col in ["ann_vol","max_drawdown","period_return"]:
+        assert np.isfinite(tl[col]).all(), f"{method}: non-finite in {col}"
+    report = res.get("report","")
+    assert isinstance(report, str) and len(report) > 10, f"{method}: empty report"
 
 def main():
-    ok = True
-    for m in ["hmm", "bocpd"]:
-        try:
-            rep = run_one(m)
-            print(f"\n=== {m.upper()} SMOKE OK ===")
-            print(rep.splitlines()[0])
-        except Exception as e:
-            ok = False
-            print(f"\n=== {m.upper()} SMOKE FAIL ===")
-            print("ERROR:", e, file=sys.stderr)
-    sys.exit(0 if ok else 1)
+    for m in ["hmm","bocpd"]:
+        run_one(m)
+    print("CI smoke OK: both engines ran offline, finite timeline and report produced.")
 
 if __name__ == "__main__":
     main()

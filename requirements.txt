@@ -6,3 +6,5 @@ yfinance>=0.2
 pandas_datareader>=0.10
 plotly>=5.0
 streamlit>=1.32
+psutil>=5.9
+scipy>=1.10

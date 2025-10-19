@@ -11,6 +11,7 @@ jobs:
     name: Smoke (import + offline nowcast)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,12 +21,31 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install package + test deps
+      - name: Upgrade pip & install package
         run: |
           python -m pip install --upgrade pip
-          # Install your package and lightweight dev tools
           pip install -e .
+          # Optional tools used by some installs
           pip install pytest
+
+      - name: Show environment
+        run: |
+          python -c "import sys,platform; print('Python', sys.version); print('OS', platform.platform())"
+          pip list
+
+      - name: Import sanity
+        run: |
+          python - <<'PY'
+          import autoregime
+          print("autoregime version OK")
+          from autoregime.engines import hmm_sticky
+          print("HMM engine import OK")
+          try:
+              from autoregime.engines import bocpd
+              print("BOCPD engine import OK")
+          except Exception as e:
+              raise SystemExit(f"BOCPD import failed: {e}")
+          PY
 
       - name: Run offline smoke test
         run: |
