@@ -182,7 +182,6 @@ Different HMM vs BOCPD regimes: that’s expected.
 HMM smooths over noise via sticky transitions; BOCPD reacts faster to structural jumps.
 Use presets to get them “closer” (HMM: higher min_segment_days/sticky; BOCPD: lower hazard).
 
-Verify the GS10 risk-free is being used (optional)
 # Quick check inside Python
 from autoregime.reporting.common import get_daily_risk_free
 import pandas as pd
@@ -201,3 +200,4 @@ Kanyinsola Ogunbanjo — Finance Professional
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
 
 If AutoRegime helps your workflow, please ⭐ the repo and share feedback or issues!
+
