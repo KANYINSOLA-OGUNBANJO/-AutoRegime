@@ -25,3 +25,6 @@ reports_*/
 # Builds
 dist/
 build/
+
+# Benchmark outputs
+benchmarks/
