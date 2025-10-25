@@ -113,8 +113,6 @@ Pick Ticker, View (HMM / BOCPD / Consensus), Start date, and Sensitivity preset.
 
 See report text, timeline table & chart, and download CSV.
 
-Admin usage panel (if enabled) at ?admin=1.
-
 (Consensus is an app convenience that displays both engines; the Python API uses method="hmm" or method="bocpd".)
 
 Metrics & Conventions
@@ -408,3 +406,4 @@ Kanyinsola Ogunbanjo — Finance Professional
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
 
 If AutoRegime helps your workflow, please ⭐ the repo and share issues/ideas!
+
