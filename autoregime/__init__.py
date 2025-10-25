@@ -7,6 +7,15 @@ __version__ = "0.1.0"
 __description__ = "Automatic market regime detection with HMM and BOCPD"
 __author__ = "Kanyinsola Ogunbanjo"
 
+# ensure NumPy compat first
+try:
+    # if you later move ar_np_compat inside the package, the first import will work
+    from .ar_np_compat import ensure_numpy_compat  # type: ignore
+except Exception:
+    # fall back to repo-root module
+    from ar_np_compat import ensure_numpy_compat  # type: ignore
+ensure_numpy_compat()
+
 from .engines.hmm_sticky import (
     stable_regime_analysis as _hmm_analyze,
     stable_report as _hmm_report,
