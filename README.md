@@ -13,9 +13,9 @@ One-liner → print a professional report from a single call.
 
 Two engines → Sticky Gaussian HMM (default) and BOCPD (hazard-tuned).
 
-Dynamic risk-free → daily FRED GS10 (10Y UST) for Sharpe/vol (no hardcoded 0%).
+Dynamic risk-free → daily FRED GS10 (10Y UST) for Sharpe/vol.
 
-Stability-first → minimum segment length + sticky transitions (no 1-day flip-flops).
+Stability-first → minimum segment length + sticky transitions.
 
 Clear reporting → price move ($start → $end), timeline table/CSV, chart.
 
@@ -96,11 +96,6 @@ for t in tickers:
     rows.append(tl)
 df = pd.concat(rows, ignore_index=True)
 df.head()
-
-D) Verify GS10 risk-free (used for Sharpe/Vol)
-from autoregime.reporting.common import get_daily_risk_free
-rf = get_daily_risk_free("2025-05-01","2025-10-01")   # aligned to business days
-rf.head(), rf.tail()  # non-zero → GS10 pulled; zeros → fallback (network/FRED outage)
 
 Streamlit App (Live Nowcast)
 
@@ -350,11 +345,6 @@ t
 
 −1).
 
-CAGR
-
-Computed from prices and shown only for segments ≥ 90 trading days (if explicitly enabled).
-By default, the app hides CAGR to avoid misuse on short windows.
-
 Engines & Presets
 
 HMM (sticky) — default
@@ -406,4 +396,5 @@ Kanyinsola Ogunbanjo — Finance Professional
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
 
 If AutoRegime helps your workflow, please ⭐ the repo and share issues/ideas!
+
 
