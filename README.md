@@ -35,6 +35,9 @@ pip install -e .
 Key deps: numpy, pandas, scikit-learn, hmmlearn, yfinance, pandas_datareader, plotly, streamlit.
 
 Quick Start (Python)
+%pip install --upgrade pip
+%pip install "git+https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime.git"
+
 import autoregime as ar
 
 # 1) One line: formatted report text
@@ -69,22 +72,8 @@ pd.DataFrame(res["regime_timeline"]).to_csv(f"timeline_{TICKER}.csv", index=Fals
 
 print("Saved:", f"report_{TICKER}.txt", f"timeline_{TICKER}.csv")
 
-B) Plot timeline (Plotly)
-import pandas as pd, plotly.express as px
 
-tl = pd.DataFrame(res["regime_timeline"]).copy()
-if not tl.empty:
-    tl["Start"] = pd.to_datetime(tl["start"], errors="coerce")
-    tl["End"]   = pd.to_datetime(tl["end"], errors="coerce")
-    tl["Regime"] = tl["label"].astype(str)
-
-    hover = [c for c in ["period_index","period_return","ann_vol","sharpe","max_drawdown"] if c in tl.columns]
-    fig = px.timeline(tl, x_start="Start", x_end="End", y="Regime", color="Regime", hover_data=hover,
-                      title=f"{TICKER} — {res.get('meta',{}).get('method','hmm').upper()} timeline")
-    fig.update_yaxes(autorange="reversed")
-    fig.show()
-
-C) Batch a few tickers
+B) Batch a few tickers
 import pandas as pd, autoregime as ar
 
 tickers = ["SPY","QQQ","NVDA","TLT"]
@@ -97,12 +86,11 @@ for t in tickers:
 df = pd.concat(rows, ignore_index=True)
 df.head()
 
-Streamlit App (Live Nowcast)
+Streamlit App (Live Nowcast): https://b7bd5xsycwekszw8eyycc9.streamlit.app/
 
 From repo root:
 
 streamlit run autoregime/app/main.py
-
 
 Pick Ticker, View (HMM / BOCPD / Consensus), Start date, and Sensitivity preset.
 
@@ -195,3 +183,4 @@ Kanyinsola Ogunbanjo — Finance Professional
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
 
 If AutoRegime helps your workflow, please ⭐ the repo and share issues/ideas!
+
