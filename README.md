@@ -120,234 +120,33 @@ Calendar: Business days (NYSE).
 
 Trading-days constant: 252.
 
-Returns
+**Returns**
+- **Daily log return:** `r_t = ln(P_t / P_{t-1})`
+- **Displayed period return (simple):** `P_end / P_start - 1`
 
-Daily log returns: 
-𝑟
-𝑡
-=
-log
-⁡
-(
-𝑃
-𝑡
-/
-𝑃
-𝑡
-−
-1
-)
-r
-t
-	​
+**Risk-free (dynamic)**
+- **Source:** FRED GS10 (10-year UST, annualized %).
+- **Daily (continuous compounding):** `rf_daily(t) = ln(1 + GS10_annual(t) / 252)`
+- **Alignment:** forward-filled to trading days. If FRED is unreachable, use `0`.
 
-=log(P
-t
-	​
+**Excess returns** (used for Sharpe & Vol)
+- `r^x_t = r_t - rf_daily(t)`
 
-/P
-t−1
-	​
+**Annualization**
+- **Mean (excess):** `μ_ann = 252 * mean(r^x_t)`
+- **Volatility (excess, population std `ddof=0`):** `σ_ann = sqrt(252) * std(r^x_t)`
+- **Sharpe (excess Rf):** `Sharpe = μ_ann / σ_ann`
 
-).
+**Max Drawdown** (within segment; adjusted prices)
+- `MDD = min_t ( P_t / max_{τ≤t} P_τ - 1 )`
 
-Period return (displayed): 
-𝑃
-end
-/
-𝑃
-start
-−
-1
-P
-end
-	​
+**Notes**
+- Trading days per year: `N = 252`.
+- Prices use adjusted close (splits/dividends).
 
-/P
-start
-	​
+**Engines & Presets**
 
-−1 (simple).
-
-Risk-free (dynamic)
-
-Source: FRED GS10 (10-year UST constant-maturity, annualized %).
-
-Daily (continuous compounding):
-
-𝑟
-𝑓
-daily
-(
-𝑡
-)
-=
-log
-⁡
-(
-1
-+
-𝐺
-𝑆
-10
-annual
-(
-𝑡
-)
-252
-)
-rf
-daily
-	​
-
-(t)=log(1+
-252
-GS10
-annual
-	​
-
-(t)
-	​
-
-).
-
-Forward-filled to trading days; if FRED is unreachable, falls back to 0 (app doesn’t break).
-
-Excess returns (used for Sharpe & Vol)
-
-𝑟
-𝑡
-𝑥
-=
-𝑟
-𝑡
-−
-𝑟
-𝑓
-daily
-(
-𝑡
-)
-r
-t
-x
-	​
-
-=r
-t
-	​
-
-−rf
-daily
-	​
-
-(t).
-
-Annualization
-
-Mean (excess): 
-𝜇
-ann
-=
-252
-⋅
-mean
-(
-𝑟
-𝑥
-)
-μ
-ann
-	​
-
-=252⋅mean(r
-x
-).
-
-Vol (excess): 
-𝜎
-ann
-=
-252
-⋅
-std
-(
-𝑟
-𝑥
-)
-σ
-ann
-	​
-
-=
-252
-	​
-
-⋅std(r
-x
-) (population std, ddof=0).
-
-Sharpe (excess Rf)
-
-Sharpe
-=
-𝜇
-ann
-/
-𝜎
-ann
-Sharpe=μ
-ann
-	​
-
-/σ
-ann
-	​
-
-.
-
-Max Drawdown (within segment; adjusted prices)
-
-min
-⁡
-𝑡
-(
-𝑃
-𝑡
-max
-⁡
-𝜏
-≤
-𝑡
-𝑃
-𝜏
-−
-1
-)
-min
-t
-	​
-
-(
-max
-τ≤t
-	​
-
-P
-τ
-	​
-
-P
-t
-	​
-
-	​
-
-−1).
-
-Engines & Presets
-
-HMM (sticky) — default
+**HMM (sticky) — default**
 
 min_segment_days: enforces minimum duration (reduces choppiness).
 
@@ -356,22 +155,22 @@ sticky: diagonal bias (closer to 1 ⇒ fewer switches).
 n_components: number of hidden states; "auto" if enabled in your build.
 
 preset	min_segment_days	sticky
-aggressive	15	0.970
-balanced	20	0.980
-conservative	30	0.985
+aggressive	 15	 0.970
+balanced	 20	 0.980
+conservative 30	 0.985
 
-BOCPD (online)
+**BOCPD (online)**
 
 hazard: base hazard rate (lower ⇒ longer segments, fewer switches).
 
 min_segment_days: post-filter very short tails.
 
 preset	min_segment_days	hazard
-aggressive	10	1/40
-balanced	15	1/60
-conservative	20	1/90
-Troubleshooting
+aggressive	  10	1/40
+balanced	  15	1/60
+conservative  20	1/90
 
+**Troubleshooting**
 NaNs / Infs: inputs are sanitized (drop non-finite; enforce positive prices). If it still fails:
 – Widen the date window; very short samples can be degenerate.
 – Check the symbol (e.g., ^VIX instead of VIX).
@@ -396,5 +195,3 @@ Kanyinsola Ogunbanjo — Finance Professional
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
 
 If AutoRegime helps your workflow, please ⭐ the repo and share issues/ideas!
-
-
