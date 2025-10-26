@@ -34,11 +34,12 @@ pip install -e .
 
 Key deps: numpy, pandas, scikit-learn, hmmlearn, yfinance, pandas_datareader, plotly, streamlit.
 
-Quick Start (Python)
+Quick Start (Python):
+
 %pip install --upgrade pip
 %pip install "git+https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime.git"
-
 import autoregime as ar
+
 
 # 1) One line: formatted report text
 print(ar.stable_report("SPY", start_date="2019-01-01", method="hmm"))
@@ -183,4 +184,5 @@ Kanyinsola Ogunbanjo — Finance Professional
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
 
 If AutoRegime helps your workflow, please ⭐ the repo and share issues/ideas!
+
 
