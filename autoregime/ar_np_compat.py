@@ -1,28 +1,29 @@
 # autoregime/ar_np_compat.py
 """
-Small NumPy compatibility shim so older deps (e.g., hmmlearn/scikit) don't break on NumPy 2.x.
-Safe no-ops if attributes already exist.
+Tiny NumPy compatibility shim so older libs (hmmlearn, sklearn versions, etc.)
+that reference deprecated NumPy aliases keep working on modern NumPy (>=1.24/2.x).
+
+Call ensure_numpy_compat() once at import time.
 """
 from __future__ import annotations
 
 def ensure_numpy_compat() -> None:
-    try:
-        import numpy as np  # noqa
-    except Exception:
-        return
+    import numpy as np  # noqa: F401
 
-    # Add deprecated aliases if missing (harmless if already present)
-    fallback = {
-        "float": float,
-        "int": int,
-        "bool": bool,
-        "object": object,
-        "complex": complex,
-        "long": int,  # old alias
-    }
-    for name, pytype in fallback.items():
-        if not hasattr(np, name):
+    # Provide deprecated aliases if missing
+    for old, new in [
+        ("float", float),
+        ("int", int),
+        ("bool", bool),
+        ("object", object),
+        ("complex", complex),
+        ("long", int),  # Py2 legacy
+    ]:
+        if not hasattr(np, old):
             try:
-                setattr(np, name, pytype)
+                setattr(np, old, new)  # type: ignore[attr-defined]
             except Exception:
                 pass
+
+    # You can also relax FP errors if needed (commented by default)
+    # np.seterr(all="ignore")
