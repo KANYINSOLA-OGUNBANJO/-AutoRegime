@@ -53,7 +53,7 @@ def _load_prices(assets: Any, start_date: Optional[str], end_date: Optional[str]
     if isinstance(assets, str):
         if yf is None:
             raise RuntimeError("yfinance is required to load a ticker string. Try passing a Series instead.")
-        # yfinance end is exclusive; allow None
+        # yfinance `end` is exclusive; allow None
         df = yf.download(assets, start=start_date, end=end_date, auto_adjust=True, progress=False)
         if df is None or df.empty or "Close" not in df.columns:
             raise ValueError(f"No data returned for {assets}.")
@@ -75,7 +75,6 @@ def _load_prices(assets: Any, start_date: Optional[str], end_date: Optional[str]
         if assets.shape[1] < 1:
             raise ValueError("Price DataFrame has no columns.")
         df = assets.copy()
-        # Coerce and sanitize only the first column for stability
         first = df.columns[0]
         ser = ensure_positive_prices(pd.to_numeric(df[first], errors="coerce").astype(float))
         ser.name = str(first)
@@ -123,7 +122,6 @@ def _min_segment_enforce(states: np.ndarray, min_len: int) -> np.ndarray:
             elif left_state is not None:
                 s[a : b + 1] = left_state
             else:
-                # Single tiny run with no neighbors (degenerate); leave it.
                 continue
             changed = True
             break
@@ -304,7 +302,6 @@ def stable_regime_analysis(
 
     # ---- Design matrix for HMM from winsorized **raw** returns
     X = r_w_raw.values.reshape(-1, 1).astype(float)
-    # Absolute finiteness
     if not np.isfinite(X).all():
         mask = np.isfinite(X[:, 0])
         X = X[mask]
@@ -335,8 +332,11 @@ def stable_regime_analysis(
                 init_params="mc",
             )
             # Sticky prior
-            trans = np.full((k, k), (1 - sticky) / (k - 1))
-            np.fill_diagonal(trans, sticky)
+            if k > 1:
+                trans = np.full((k, k), (1 - sticky) / (k - 1))
+                np.fill_diagonal(trans, sticky)
+            else:
+                trans = np.array([[1.0]])
             model.startprob_ = np.full(k, 1.0 / k)
             model.transmat_ = trans
             model.fit(Xs)
@@ -353,7 +353,7 @@ def stable_regime_analysis(
         ics = {k: _ic_for_k(k, auto_k_metric) for k in range(lo, hi + 1)}
         K = min(ics, key=ics.get)
     else:
-        K = int(n_components)
+        K = max(1, int(n_components))
 
     # ---- Final model
     with warnings.catch_warnings():
@@ -367,8 +367,11 @@ def stable_regime_analysis(
             algorithm="viterbi",
             init_params="mc",
         )
-        trans = np.full((K, K), (1 - sticky) / (K - 1))
-        np.fill_diagonal(trans, sticky)
+        if K > 1:
+            trans = np.full((K, K), (1 - sticky) / (K - 1))
+            np.fill_diagonal(trans, sticky)
+        else:
+            trans = np.array([[1.0]])
         model.startprob_ = np.full(K, 1.0 / K)
         model.transmat_ = trans
 

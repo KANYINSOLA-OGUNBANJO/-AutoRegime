@@ -7,33 +7,47 @@ import pandas as pd
 TRADING_DAYS = 252
 MIN_CAGR_DAYS = 90  # suppress CAGR for segments younger than this
 
-# ---------- safe helpers ----------
+
+# ---------- internal helpers ----------
 def _to_datetime_index(x) -> pd.DatetimeIndex:
     if isinstance(x, pd.DatetimeIndex):
         return x
     return pd.to_datetime(x)
 
+
 def _as_business_days(start, end) -> pd.DatetimeIndex:
     return pd.bdate_range(pd.to_datetime(start), pd.to_datetime(end))
 
-def _make_finite(s: pd.Series, fill: float = 0.0) -> pd.Series:
+
+def _make_finite(s: pd.Series | list | np.ndarray | None, fill: float = 0.0) -> pd.Series:
+    """Coerce to float Series and replace inf/NaN with `fill` (default 0.0)."""
     if s is None:
         return pd.Series([], dtype=float)
     s = pd.to_numeric(pd.Series(s), errors="coerce").astype(float)
     return s.replace([np.inf, -np.inf], np.nan).fillna(fill)
 
-# Back-compat aliases older engines may import
-def ensure_finite_series(s: pd.Series, fill: float = 0.0) -> pd.Series: return _make_finite(s, fill=fill)
-def sanitize_returns(s: pd.Series, fill: float = 0.0) -> pd.Series:     return _make_finite(s, fill=fill)
+
+# ---------- back-compat aliases some engines import ----------
+def ensure_finite_series(s: pd.Series, fill: float = 0.0) -> pd.Series:
+    return _make_finite(s, fill=fill)
+
+
+def sanitize_returns(s: pd.Series, fill: float = 0.0) -> pd.Series:
+    return _make_finite(s, fill=fill)
+
+
 def sanitize_prices(s: pd.Series) -> pd.Series:
+    """Legacy alias (kept so `from ..reporting.common import sanitize_prices` never breaks)."""
     if s is None:
         return pd.Series([], dtype=float)
     s = pd.to_numeric(pd.Series(s), errors="coerce").astype(float)
     s = s.replace([np.inf, -np.inf], np.nan).dropna()
     return s
 
+
 # ---------- prices ----------
 def ensure_positive_prices(prices: pd.Series, *, min_positive: float = 1e-12) -> pd.Series:
+    """Drop non-positive and non-finite observations; keep index & name."""
     if prices is None or len(prices) == 0:
         return pd.Series([], dtype=float)
     p = pd.to_numeric(prices, errors="coerce").astype(float)
@@ -42,8 +56,10 @@ def ensure_positive_prices(prices: pd.Series, *, min_positive: float = 1e-12) ->
     p.name = getattr(prices, "name", None) or "price"
     return p
 
+
 # ---------- risk-free (dynamic) ----------
 _RF_CACHE: Dict[Tuple[str, str, str, str], pd.Series] = {}
+
 
 def get_daily_risk_free(
     start: str | pd.Timestamp,
@@ -54,8 +70,13 @@ def get_daily_risk_free(
     mode: str = "cc",  # "cc" (continuous) or "simple"
     index: Optional[pd.DatetimeIndex] = None,
 ) -> pd.Series:
+    """
+    Fetch annualized risk-free (GS10) from FRED, convert to daily
+    (continuous comp if mode='cc'; else simple), align to `index`
+    (or business days between start/end). Falls back to 0.0 on error.
+    """
     start_iso = pd.to_datetime(start).date().isoformat()
-    end_iso   = pd.to_datetime(end).date().isoformat()
+    end_iso = pd.to_datetime(end).date().isoformat()
     key = (start_iso, end_iso, series, mode)
 
     if key in _RF_CACHE:
@@ -63,12 +84,16 @@ def get_daily_risk_free(
     else:
         try:
             from pandas_datareader import data as pdr  # type: ignore
-            ser = pdr.DataReader(series, source, start_iso, end_iso)[series].astype(float) / 100.0
+            ser = pdr.DataReader(series, source, start_iso, end_iso)[series].astype(float) / 100.0  # annual decimal
             ser = ser.sort_index()
         except Exception:
+            # Offline or FRED unavailable → zero RF; engines keep running
             ser = pd.Series(0.0, index=_as_business_days(start_iso, end_iso), name=series, dtype=float)
 
-        daily = np.log1p(ser / TRADING_DAYS) if mode == "cc" else (ser / TRADING_DAYS)
+        if mode == "cc":
+            daily = np.log1p(ser / TRADING_DAYS)
+        else:
+            daily = ser / TRADING_DAYS
         rf = pd.Series(daily, name="rf_daily").astype(float)
         rf = _make_finite(rf, fill=0.0)
         _RF_CACHE[key] = rf
@@ -78,17 +103,21 @@ def get_daily_risk_free(
     rf_aligned.name = "rf_daily"
     return rf_aligned
 
+
 # Alias some engines might import
 get_risk_free_daily = get_daily_risk_free
 
+
 def compute_excess_log_returns(daily_log_returns: pd.Series, rf_daily: pd.Series) -> pd.Series:
+    """excess = raw daily log-returns - rf_daily (aligned, finite)."""
     if daily_log_returns is None or len(daily_log_returns) == 0:
         return pd.Series([], dtype=float)
-    r  = _make_finite(daily_log_returns, fill=np.nan)
+    r = _make_finite(daily_log_returns, fill=np.nan)
     rf = _make_finite(rf_daily, fill=0.0)
     rx = (r.reindex_like(rf) - rf).replace([np.inf, -np.inf], np.nan).dropna()
     rx.name = "excess_logret"
     return rx
+
 
 # ---------- stats helpers ----------
 def annualize_return_mean(daily_log_returns: pd.Series) -> float:
@@ -96,10 +125,12 @@ def annualize_return_mean(daily_log_returns: pd.Series) -> float:
         return float("nan")
     return float(_make_finite(daily_log_returns).mean() * TRADING_DAYS)
 
+
 def annualize_vol(daily_log_returns: pd.Series) -> float:
     if daily_log_returns is None or len(daily_log_returns) == 0:
         return float("nan")
     return float(_make_finite(daily_log_returns).std(ddof=0) * np.sqrt(TRADING_DAYS))
+
 
 def max_drawdown_from_prices(prices: pd.Series) -> float:
     if prices is None or len(prices) == 0:
@@ -109,6 +140,7 @@ def max_drawdown_from_prices(prices: pd.Series) -> float:
         return float("nan")
     return float((p / p.cummax() - 1.0).min())
 
+
 def total_return_from_prices(prices: pd.Series) -> float:
     if prices is None or len(prices) < 2:
         return float("nan")
@@ -116,6 +148,7 @@ def total_return_from_prices(prices: pd.Series) -> float:
     if len(p) < 2:
         return float("nan")
     return float(p.iloc[-1] / p.iloc[0] - 1.0)
+
 
 def cagr_from_prices(prices: pd.Series, trading_days: int) -> float:
     if prices is None or len(prices) < 2 or trading_days <= 0:
@@ -131,12 +164,14 @@ def cagr_from_prices(prices: pd.Series, trading_days: int) -> float:
         return float("nan")
     return float(total ** (1.0 / years) - 1.0)
 
+
 def winsorize(s: pd.Series, p: float = 0.005) -> pd.Series:
     if s is None or len(s) == 0:
-        return s
+        return pd.Series([], dtype=float)
     s = pd.to_numeric(s, errors="coerce").astype(float)
     lo, hi = s.quantile([p, 1 - p])
     return s.clip(lo, hi)
+
 
 def compute_log_returns(prices: pd.Series) -> pd.Series:
     if prices is None or len(prices) == 0:
@@ -145,6 +180,7 @@ def compute_log_returns(prices: pd.Series) -> pd.Series:
     r = np.log(p).diff().replace([np.inf, -np.inf], np.nan).dropna()
     r.name = "logret"
     return r
+
 
 # ---------- intra-regime shock annotation ----------
 def annotate_intra_regime_shocks(
@@ -184,6 +220,7 @@ def annotate_intra_regime_shocks(
             tag = f"intra_shock(|z|>{z_threshold:.1f}, n={n})"
             out.at[i, "note"] = (prev + (", " if prev else "") + tag)
     return out
+
 
 # ---------- generic timeline builder ----------
 def build_timeline_from_state_runs(
@@ -226,14 +263,14 @@ def build_timeline_from_state_runs(
     for k, (a, b, st) in enumerate(runs_from_states(states), 1):
         s_dt, e_dt = pos_to_dt[a], pos_to_dt[b]
         r_seg_ex = rx.iloc[a : b + 1]
-        p_seg    = prices_aligned_to_returns.iloc[a : b + 1]
+        p_seg = prices_aligned_to_returns.iloc[a : b + 1]
 
         tdays = int(b - a + 1)
         years = float(tdays / TRADING_DAYS)
 
         ann_ret_mean = annualize_return_mean(r_seg_ex)
-        ann_vol      = annualize_vol(r_seg_ex)
-        sharpe       = float(ann_ret_mean / ann_vol) if np.isfinite(ann_vol) and ann_vol > 0 else float("nan")
+        ann_vol = annualize_vol(r_seg_ex)
+        sharpe = float(ann_ret_mean / ann_vol) if np.isfinite(ann_vol) and ann_vol > 0 else float("nan")
 
         total_ret = total_return_from_prices(p_seg)
         raw_cagr = cagr_from_prices(p_seg, tdays)
@@ -257,11 +294,11 @@ def build_timeline_from_state_runs(
                 "price_change_abs": (p1 - p0) if (np.isfinite(p0) and np.isfinite(p1)) else float("nan"),
                 "price_change_pct": float(total_ret),
                 "period_return": float(total_ret),
-                "ann_return": cagr,
+                "ann_return": cagr,         # optional; often hidden if < MIN_CAGR_DAYS
                 "ann_vol": float(ann_vol),
                 "sharpe": float(sharpe) if np.isfinite(sharpe) else float("nan"),
                 "max_drawdown": float(mdd),
-                "ann_return_mean": float(ann_ret_mean),
+                "ann_return_mean": float(ann_ret_mean),  # useful for label guards
                 "young_segment": bool(tdays < MIN_CAGR_DAYS),
                 "note": "",
                 "pos_start": int(a),
@@ -271,11 +308,13 @@ def build_timeline_from_state_runs(
 
     return pd.DataFrame(rows)
 
+
 # ---------- uniform text report ----------
 def _fmt_price(x: Optional[float], *, currency_symbol: str = "$") -> str:
     if x is None or not isinstance(x, (int, float)) or not np.isfinite(float(x)):
         return "n/a"
     return f"{currency_symbol}{float(x):,.2f}"
+
 
 def format_report(
     tl: pd.DataFrame,
@@ -311,7 +350,10 @@ def format_report(
         lines.append(f"   Duration: {start} to {end}")
         lines.append(f"   Length: {tdays} trading days ({years:.1f} years)")
         if show_price_move:
-            lines.append(f"   Price Move: {_fmt_price(p0, currency_symbol=currency_symbol)} → {_fmt_price(p1, currency_symbol=currency_symbol)}")
+            lines.append(
+                f"   Price Move: {_fmt_price(p0, currency_symbol=currency_symbol)} → "
+                f"{_fmt_price(p1, currency_symbol=currency_symbol)}"
+            )
         lines.append(f"   Period Return: {pr * 100:.1f}%")
 
         if not hide_cagr_line:
@@ -333,20 +375,34 @@ def format_report(
             "CURRENT MARKET STATUS:",
             f"   Active Regime: {last.get('label','')}",
             f"   Regime Started: {last.get('start','')}",
-            f"   Duration So Far: {int(last.get('trading_days', 0))} days",
+            f"   Duration So Far: {int(last.get('trading_days', 0))} trading days",
         ]
     return "\n".join(lines)
+
 
 # Back-compat alias
 format_regime_report = format_report
 
+
 __all__ = [
-    "TRADING_DAYS","MIN_CAGR_DAYS",
-    "winsorize","compute_log_returns","compute_excess_log_returns",
-    "get_daily_risk_free","get_risk_free_daily",
-    "annualize_return_mean","annualize_vol",
-    "max_drawdown_from_prices","total_return_from_prices","cagr_from_prices",
-    "build_timeline_from_state_runs","format_report","format_regime_report",
-    "ensure_positive_prices","ensure_finite_series","sanitize_returns","sanitize_prices",
+    "TRADING_DAYS",
+    "MIN_CAGR_DAYS",
+    "winsorize",
+    "compute_log_returns",
+    "compute_excess_log_returns",
+    "get_daily_risk_free",
+    "get_risk_free_daily",
+    "annualize_return_mean",
+    "annualize_vol",
+    "max_drawdown_from_prices",
+    "total_return_from_prices",
+    "cagr_from_prices",
+    "build_timeline_from_state_runs",
+    "format_report",
+    "format_regime_report",
+    "ensure_positive_prices",
+    "ensure_finite_series",
+    "sanitize_returns",
+    "sanitize_prices",
     "annotate_intra_regime_shocks",
 ]
