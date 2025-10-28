@@ -27,6 +27,7 @@ Python 3.11 recommended
 
 git clone https://github.com/KANYINSOLA-OGUNBANJO/-AutoRegime.git
 cd -AutoRegime
+
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 pip install -e .
@@ -64,9 +65,6 @@ import os, pandas as pd, autoregime as ar
 TICKER = "SPY"
 res = ar.stable_regime_analysis(TICKER, start_date="2015-01-01", method="hmm", return_result=True)
 
-# report
-with open(f"report_{TICKER}.txt", "w", encoding="utf-8") as f:
-    f.write(res["report"])
 
 # timeline CSV
 pd.DataFrame(res["regime_timeline"]).to_csv(f"timeline_{TICKER}.csv", index=False)
@@ -75,7 +73,7 @@ print("Saved:", f"report_{TICKER}.txt", f"timeline_{TICKER}.csv")
 
 
 B) Batch a few tickers
-import pandas as pd, autoregime as ar
+import pandas as pd, import autoregime as ar
 
 tickers = ["SPY","QQQ","NVDA","TLT"]
 rows = []
@@ -184,5 +182,6 @@ Kanyinsola Ogunbanjo — Finance Professional
 🐙 GitHub: @KANYINSOLA-OGUNBANJO
 
 If AutoRegime helps your workflow, please ⭐ the repo and share issues/ideas!
+
 
 
