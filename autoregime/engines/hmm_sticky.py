@@ -67,7 +67,7 @@ def _load_prices(assets: Any, start_date: Optional[str], end_date: Optional[str]
     # Already a Series of prices
     if isinstance(assets, pd.Series):
         name = getattr(assets, "name", None) or "asset"
-        ser = ensure_positive_prices(assets.astype(float))
+        ser = ensure_positive_prices(pd.to_numeric(assets, errors="coerce").astype(float))
         return ser.to_frame(name=name)
 
     # DataFrame: take first column as prices
@@ -197,7 +197,7 @@ def _relabel_from_segment_metrics(tl: pd.DataFrame) -> pd.DataFrame:
         vol_p70 = np.nan
 
     for i, r in out.iterrows():
-        mu_ann = float(r.get("ann_return_mean", np.nan))  # annualized mean on (excess) inside builder
+        mu_ann = float(r.get("ann_return_mean", np.nan))  # annualized mean (excess) inside builder
         vol = float(r.get("ann_vol", np.nan))
         mdd = float(r.get("max_drawdown", np.nan))
         ret_tot = float(r.get("period_return", np.nan))
@@ -236,6 +236,130 @@ def _relabel_from_segment_metrics(tl: pd.DataFrame) -> pd.DataFrame:
 
 
 # --------------------------------------------------------------------------------------
+# HMM utilities
+# --------------------------------------------------------------------------------------
+def _n_params_gaussian_hmm(k: int, d: int = 1, covariance_type: str = "full") -> int:
+    """Rough parameter count for BIC/AIC."""
+    # startprob: K-1 free; trans: K*(K-1); means: K*d; covs: K * d(d+1)/2 (full) or K*d (diag)
+    start = k - 1
+    trans = k * (k - 1)
+    means = k * d
+    if covariance_type == "full":
+        covs = k * (d * (d + 1) // 2)
+    else:
+        covs = k * d
+    return start + trans + means + covs
+
+
+def _fit_hmm(
+    Xs: np.ndarray,
+    K: int,
+    sticky: float,
+    random_state: int,
+    n_init: int = 3,
+) -> GaussianHMM:
+    """
+    Fit a sticky GaussianHMM robustly. Ensures finite inputs, small min_covar, and
+    diagonal-heavy transmat prior to reduce flip-flops.
+    """
+    if not np.isfinite(Xs).all():
+        mask = np.isfinite(Xs[:, 0])
+        Xs = Xs[mask]
+    if len(Xs) < 10:
+        raise ValueError("Too few observations after sanitization.")
+
+    # sticky Dirichlet prior: each row favors staying in the same state
+    off = max(1e-6, (1.0 - float(sticky)) / max(1, K - 1))
+    diag = float(sticky)
+    trans_prior = np.full((K, K), off, dtype=float)
+    np.fill_diagonal(trans_prior, diag)
+
+    # start prob prior: near-uniform (avoid degeneracy)
+    start_prior = np.full(K, 1.0 / K, dtype=float)
+
+    best_model = None
+    best_score = -np.inf
+
+    # Suppress common hmmlearn warnings that aren't fatal
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        warnings.simplefilter("ignore", category=UserWarning)
+
+        for seed in [random_state + i for i in range(n_init)]:
+            model = GaussianHMM(
+                n_components=K,
+                covariance_type="full",
+                min_covar=1e-6,
+                n_iter=250,
+                tol=1e-4,
+                random_state=seed,
+                params="stmc",          # (startprob, transmat, means, covars)
+                init_params="mc",       # we set priors for s,t; let means/covars init
+            )
+            # Priors
+            model.startprob_prior = start_prior
+            model.transmat_prior = trans_prior
+            try:
+                model.fit(Xs)
+                score = float(model.score(Xs))  # log-likelihood
+                if np.isfinite(score) and score > best_score:
+                    best_score = score
+                    best_model = model
+            except Exception:
+                continue
+
+    if best_model is None:
+        raise RuntimeError("HMM fit failed for all initializations.")
+    return best_model
+
+
+def _choose_k_by_ic(
+    Xs: np.ndarray,
+    sticky: float,
+    random_state: int,
+    k_floor: int,
+    k_cap: int,
+    metric: str = "bic",
+) -> Tuple[int, GaussianHMM, dict]:
+    """
+    Try K in [k_floor..k_cap] (clamped by sample size) and pick best by BIC/AIC.
+    Returns (K*, model, scores).
+    """
+    N = len(Xs)
+    # ensure at least ~25 points per state
+    k_max_by_n = max(2, min(k_cap, N // 25))
+    k_min = max(2, min(k_floor, k_max_by_n))
+    k_max = max(k_min, k_max_by_n)
+
+    scores: dict[int, dict] = {}
+    best = None
+    best_ic = np.inf
+
+    for K in range(k_min, k_max + 1):
+        try:
+            mdl = _fit_hmm(Xs, K=K, sticky=sticky, random_state=random_state)
+            ll = float(mdl.score(Xs))
+            p = _n_params_gaussian_hmm(K, d=Xs.shape[1], covariance_type="full")
+            if metric.lower() == "aic":
+                ic = -2.0 * ll + 2.0 * p
+            else:  # BIC default
+                ic = -2.0 * ll + p * np.log(max(1, N))
+            scores[K] = {"ll": ll, "p": p, "ic": ic}
+            if ic < best_ic:
+                best_ic = ic
+                best = (K, mdl)
+        except Exception:
+            continue
+
+    if best is None:
+        # Final fallback: force K=2
+        mdl = _fit_hmm(Xs, K=2, sticky=sticky, random_state=random_state)
+        return 2, mdl, {2: {"ll": float(mdl.score(Xs)), "p": _n_params_gaussian_hmm(2), "ic": 0.0}}
+
+    return best[0], best[1], scores
+
+
+# --------------------------------------------------------------------------------------
 # Main entrypoint
 # --------------------------------------------------------------------------------------
 def stable_regime_analysis(
@@ -265,12 +389,19 @@ def stable_regime_analysis(
         px = px.iloc[:, [0]]
     prices = ensure_positive_prices(px.iloc[:, 0].dropna().astype(float))
 
-    data_earliest = str(pd.Timestamp(prices.index.min()).date()) if len(prices) else ""
-    data_latest = str(pd.Timestamp(prices.index.max()).date()) if len(prices) else ""
+    if len(prices) < 2:
+        report = "REGIME ANALYSIS\n================\n\nNot enough price points."
+        meta = {"method": "hmm_sticky", "n_obs": int(len(prices))}
+        return {"report": report, "regime_timeline": [], "meta": meta} if return_result else report
+
+    data_earliest = str(pd.Timestamp(prices.index.min()).date())
+    data_latest = str(pd.Timestamp(prices.index.max()).date())
 
     # ---- Raw log returns for segmentation features
-    r = compute_log_returns(prices)
-    if len(r) < max(60, min_segment_days * 3):
+    r_raw = compute_log_returns(prices)  # index ⊂ prices.index
+    r_raw = ensure_finite_series(r_raw, fill=np.nan).dropna()
+
+    if len(r_raw) < max(60, min_segment_days * 3):
         report = "REGIME ANALYSIS\n================\n\nInsufficient data to segment reliably."
         meta = {
             "method": "hmm_sticky",
@@ -279,7 +410,7 @@ def stable_regime_analysis(
             "min_segment_days": min_segment_days,
             "random_state": random_state,
             "states_present": 0,
-            "n_obs": int(len(r)),
+            "n_obs": int(len(r_raw)),
             "data_range": {"earliest": data_earliest, "latest": data_latest},
             "notes": {"cagr_suppressed_below_days": MIN_CAGR_DAYS, "show_cagr": bool(show_cagr)},
             "validation": {"ok": True, "errors": [], "warnings": ["short_series"], "info": {}},
@@ -287,140 +418,106 @@ def stable_regime_analysis(
         return {"report": report, "regime_timeline": [], "meta": meta} if return_result else report
 
     # Winsorize raw returns (robust to outliers); keep **raw** for timeline builder
-    r_w_raw = winsorize(r, p=0.005)
+    r_w_raw = winsorize(r_raw, p=0.005)
     r_w_raw = ensure_finite_series(r_w_raw, fill=np.nan).dropna()
+
+    # prevent degenerate variance
     if r_w_raw.nunique() <= 1:
         rs = np.random.RandomState(random_state)
         r_w_raw = r_w_raw + (1e-8 * rs.normal(size=len(r_w_raw)))
 
-    # For **labeling** only, compute excess series (to rank states by Sharpe-like metric)
-    try:
-        rf_daily = get_daily_risk_free(r.index.min(), r.index.max(), index=r.index, series="GS10", mode="cc")
-    except Exception:
-        rf_daily = pd.Series(0.0, index=r.index, name="rf_daily", dtype=float)
-    rx_for_labels = compute_excess_log_returns(r_w_raw, rf_daily.reindex(r_w_raw.index).fillna(0.0))
-
     # ---- Design matrix for HMM from winsorized **raw** returns
-    X = r_w_raw.values.reshape(-1, 1).astype(float)
-    if not np.isfinite(X).all():
-        mask = np.isfinite(X[:, 0])
+    X = r_w_raw.to_numpy(dtype=float).reshape(-1, 1)
+    # Hard mask any remaining non-finite
+    mask = np.isfinite(X[:, 0])
+    if not mask.all():
         X = X[mask]
         r_w_raw = r_w_raw.iloc[mask]
 
-    if len(X) < max(60, min_segment_days * 3):
-        report = "REGIME ANALYSIS\n================\n\nInsufficient clean data after sanitization."
-        meta = {"method": "hmm_sticky", "n_obs": int(len(X))}
-        return {"report": report, "regime_timeline": [], "meta": meta} if return_result else report
-
-    # Robust scaling keeps distributions stable
+    # Robust scaling keeps distributions stable for HMM
     scaler = RobustScaler()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         Xs = scaler.fit_transform(X)
 
-    # ---- Auto-K selection (BIC/AIC)
-    def _ic_for_k(k: int, metric: str = "bic") -> float:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            model = GaussianHMM(
-                n_components=k,
-                covariance_type="full",
-                n_iter=200,
-                tol=1e-4,
-                random_state=random_state,
-                algorithm="viterbi",
-                init_params="mc",
-            )
-            # Sticky prior
-            if k > 1:
-                trans = np.full((k, k), (1 - sticky) / (k - 1))
-                np.fill_diagonal(trans, sticky)
-            else:
-                trans = np.array([[1.0]])
-            model.startprob_ = np.full(k, 1.0 / k)
-            model.transmat_ = trans
-            model.fit(Xs)
-            logL = model.score(Xs)
-            # crude param count: start + trans + emissions
-            p = k + k + k * k
-            return float(-2 * logL + (2 * p if metric.lower() == "aic" else p * np.log(len(Xs))))
+    # Guard again
+    if len(Xs) < max(60, min_segment_days * 3):
+        report = "REGIME ANALYSIS\n================\n\nInsufficient clean data after sanitization."
+        meta = {"method": "hmm_sticky", "n_obs": int(len(Xs))}
+        return {"report": report, "regime_timeline": [], "meta": meta} if return_result else report
 
-    if isinstance(n_components, str) and n_components == "auto":
-        lo = max(2, int(k_floor))
-        hi_cap = max(lo, int(k_cap))
-        hi_by_data = max(2, len(Xs) // 20)  # avoid too many states on tiny samples
-        hi = min(hi_cap, hi_by_data)
-        ics = {k: _ic_for_k(k, auto_k_metric) for k in range(lo, hi + 1)}
-        K = min(ics, key=ics.get)
+    # ---- Choose K and fit
+    if isinstance(n_components, str) and n_components.lower() == "auto":
+        K, model, ic_scores = _choose_k_by_ic(
+            Xs, sticky=sticky, random_state=random_state,
+            k_floor=int(k_floor), k_cap=int(k_cap), metric=str(auto_k_metric)
+        )
     else:
-        K = max(1, int(n_components))
+        K = max(2, int(n_components))
+        model = _fit_hmm(Xs, K=K, sticky=sticky, random_state=random_state)
+        ic_scores = {K: {"ll": float(model.score(Xs)), "p": _n_params_gaussian_hmm(K), "ic": 0.0}}
 
-    # ---- Final model
+    # ---- Predict states
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        model = GaussianHMM(
-            n_components=K,
-            covariance_type="full",
-            n_iter=500,
-            tol=1e-4,
-            random_state=random_state,
-            algorithm="viterbi",
-            init_params="mc",
-        )
-        if K > 1:
-            trans = np.full((K, K), (1 - sticky) / (K - 1))
-            np.fill_diagonal(trans, sticky)
-        else:
-            trans = np.array([[1.0]])
-        model.startprob_ = np.full(K, 1.0 / K)
-        model.transmat_ = trans
+        z = model.predict(Xs).astype(int)
 
-        model.fit(Xs)
-        states = model.predict(Xs)
+    # Enforce minimum segment length
+    z2 = _min_segment_enforce(z, min_segment_days)
 
-    # Enforce min segment length
-    states = _min_segment_enforce(states, min_segment_days)
+    # ---- For **labeling** only, compute excess series (to rank states by Sharpe-like metric)
+    try:
+        rf_daily = get_daily_risk_free(r_w_raw.index.min(), r_w_raw.index.max(), index=r_w_raw.index, series="GS10", mode="cc")
+    except Exception:
+        rf_daily = pd.Series(0.0, index=r_w_raw.index, name="rf_daily", dtype=float)
+    rx_for_labels = compute_excess_log_returns(r_w_raw, rf_daily.reindex(r_w_raw.index).fillna(0.0))
 
-    # Labels: use the **excess** series for risk-adjusted ranking, but keep dates aligned
-    labels = _label_states_rich(rx_for_labels.reindex(r_w_raw.index).fillna(0.0), states)
+    labels = _label_states_rich(rx_for_labels if len(rx_for_labels) == len(z2) else r_w_raw, z2)
 
-    # Timeline: IMPORTANT → pass **raw** (winsorized) returns, not excess.
-    px_aligned = prices.reindex(r_w_raw.index).dropna()
+    # ---- Align prices to returns index (these should already match after diff())
+    # Use exact same index; no dropping to keep lengths aligned with states
+    prices_aligned = prices.reindex(r_w_raw.index)
+    # If any NaNs slipped in, forward-fill then back-fill (no gaps expected, but be safe)
+    if prices_aligned.isna().any():
+        prices_aligned = prices_aligned.ffill().bfill()
+
+    # ---- Build standardized timeline (Sharpe computed on excess inside builder)
     tl = build_timeline_from_state_runs(
         index=r_w_raw.index,
-        states=states,
-        returns=r_w_raw,  # raw returns; Sharpe computed on excess inside builder
-        prices_aligned_to_returns=px_aligned,
+        states=z2,
+        returns=r_w_raw,                      # RAW winsorized returns; builder computes excess for Sharpe
+        prices_aligned_to_returns=prices_aligned,
         state_to_label=labels,
     )
 
-    # Segment relabel guardrails + annotate shocks (using original raw returns)
-    tl = _relabel_from_segment_metrics(tl)
-    tl = annotate_intra_regime_shocks(tl, returns=r.reindex(r_w_raw.index))
+    # Intra-regime shock notes (uses *raw* r_raw so dates match)
+    tl = annotate_intra_regime_shocks(tl, returns=r_raw.reindex(r_w_raw.index))
 
-    # Optional validation
+    # Segment-level relabel guardrails
+    tl = _relabel_from_segment_metrics(tl)
+
+    # ---- Validate (if validator present)
     if _HAS_VALIDATOR:
         try:
             v = validate_timeline(tl, min_segment_days=min_segment_days, min_cagr_days=MIN_CAGR_DAYS)
             validation_meta = {"ok": v.ok, "errors": v.errors, "warnings": v.warnings, "info": v.info}
-        except Exception as _vex:
-            validation_meta = {"ok": False, "errors": [f"validator exception: {_vex}"], "warnings": [], "info": {}}
+        except Exception as ex:
+            validation_meta = {"ok": False, "errors": [f"validator exception: {ex}"], "warnings": [], "info": {}}
     else:
         validation_meta = {"ok": True, "errors": [], "warnings": ["validator_not_installed"], "info": {}}
 
+    # ---- Report
     report = format_report(tl, show_cagr=show_cagr, hide_cagr_line=True, title="REGIME ANALYSIS")
 
-    meta = {
+    meta: Dict[str, Any] = {
         "method": "hmm_sticky",
-        "n_components": K,
-        "k_floor": k_floor,
-        "k_cap": k_cap,
-        "auto_k_metric": auto_k_metric,
-        "sticky": sticky,
-        "min_segment_days": min_segment_days,
-        "random_state": random_state,
-        "labeler": "mu_sigma_sharpe_v2 + segment_relabel_v3",
-        "states_present": int(len(set(states.tolist()))),
+        "n_components": int(K),
+        "auto_k_metric": str(auto_k_metric),
+        "ic_scores": ic_scores,
+        "sticky": float(sticky),
+        "min_segment_days": int(min_segment_days),
+        "random_state": int(random_state),
+        "states_present": int(len(set(z2.tolist()))) if len(z2) else 0,
         "n_obs": int(len(r_w_raw)),
         "data_range": {"earliest": data_earliest, "latest": data_latest},
         "notes": {"cagr_suppressed_below_days": MIN_CAGR_DAYS, "show_cagr": bool(show_cagr)},
@@ -431,17 +528,3 @@ def stable_regime_analysis(
         return {"report": report, "regime_timeline": tl.to_dict(orient="records"), "meta": meta}
     else:
         return report
-
-
-def stable_report(*args, **kwargs) -> str:
-    """Convenience wrapper that returns just the formatted report string."""
-    kwargs.setdefault("return_result", True)
-    kwargs.setdefault("show_cagr", False)
-    res = stable_regime_analysis(*args, **kwargs)
-    # If caller passed return_result=False earlier by mistake, handle gracefully
-    if isinstance(res, dict) and "report" in res:
-        return str(res["report"])
-    return str(res)
-
-
-__all__ = ["stable_regime_analysis", "AnalysisResult", "stable_report"]
