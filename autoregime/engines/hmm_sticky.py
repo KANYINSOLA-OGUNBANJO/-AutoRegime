@@ -240,7 +240,6 @@ def _relabel_from_segment_metrics(tl: pd.DataFrame) -> pd.DataFrame:
 # --------------------------------------------------------------------------------------
 def _n_params_gaussian_hmm(k: int, d: int = 1, covariance_type: str = "full") -> int:
     """Rough parameter count for BIC/AIC."""
-    # startprob: K-1 free; trans: K*(K-1); means: K*d; covs: K * d(d+1)/2 (full) or K*d (diag)
     start = k - 1
     trans = k * (k - 1)
     means = k * d
@@ -268,19 +267,16 @@ def _fit_hmm(
     if len(Xs) < 10:
         raise ValueError("Too few observations after sanitization.")
 
-    # sticky Dirichlet prior: each row favors staying in the same state
     off = max(1e-6, (1.0 - float(sticky)) / max(1, K - 1))
     diag = float(sticky)
     trans_prior = np.full((K, K), off, dtype=float)
     np.fill_diagonal(trans_prior, diag)
 
-    # start prob prior: near-uniform (avoid degeneracy)
     start_prior = np.full(K, 1.0 / K, dtype=float)
 
     best_model = None
     best_score = -np.inf
 
-    # Suppress common hmmlearn warnings that aren't fatal
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
         warnings.simplefilter("ignore", category=UserWarning)
@@ -293,15 +289,14 @@ def _fit_hmm(
                 n_iter=250,
                 tol=1e-4,
                 random_state=seed,
-                params="stmc",          # (startprob, transmat, means, covars)
-                init_params="mc",       # we set priors for s,t; let means/covars init
+                params="stmc",
+                init_params="mc",
             )
-            # Priors
             model.startprob_prior = start_prior
             model.transmat_prior = trans_prior
             try:
                 model.fit(Xs)
-                score = float(model.score(Xs))  # log-likelihood
+                score = float(model.score(Xs))
                 if np.isfinite(score) and score > best_score:
                     best_score = score
                     best_model = model
@@ -326,7 +321,6 @@ def _choose_k_by_ic(
     Returns (K*, model, scores).
     """
     N = len(Xs)
-    # ensure at least ~25 points per state
     k_max_by_n = max(2, min(k_cap, N // 25))
     k_min = max(2, min(k_floor, k_max_by_n))
     k_max = max(k_min, k_max_by_n)
@@ -342,7 +336,7 @@ def _choose_k_by_ic(
             p = _n_params_gaussian_hmm(K, d=Xs.shape[1], covariance_type="full")
             if metric.lower() == "aic":
                 ic = -2.0 * ll + 2.0 * p
-            else:  # BIC default
+            else:
                 ic = -2.0 * ll + p * np.log(max(1, N))
             scores[K] = {"ll": ll, "p": p, "ic": ic}
             if ic < best_ic:
@@ -352,7 +346,6 @@ def _choose_k_by_ic(
             continue
 
     if best is None:
-        # Final fallback: force K=2
         mdl = _fit_hmm(Xs, K=2, sticky=sticky, random_state=random_state)
         return 2, mdl, {2: {"ll": float(mdl.score(Xs)), "p": _n_params_gaussian_hmm(2), "ic": 0.0}}
 
@@ -379,8 +372,8 @@ def stable_regime_analysis(
     verbose: bool = False,
 ) -> dict | AnalysisResult | str:
     """
-    Sticky Gaussian HMM over **winsorized raw daily log-returns** (NOT already excess),
-    so that Sharpe in the timeline is computed correctly on excess inside the timeline builder.
+    Sticky Gaussian HMM over winsorized raw daily log-returns.
+    Sharpe is computed on excess returns inside the timeline builder.
     """
 
     # ---- Load & sanitize prices
@@ -398,7 +391,7 @@ def stable_regime_analysis(
     data_latest = str(pd.Timestamp(prices.index.max()).date())
 
     # ---- Raw log returns for segmentation features
-    r_raw = compute_log_returns(prices)  # index ⊂ prices.index
+    r_raw = compute_log_returns(prices)
     r_raw = ensure_finite_series(r_raw, fill=np.nan).dropna()
 
     if len(r_raw) < max(60, min_segment_days * 3):
@@ -417,30 +410,26 @@ def stable_regime_analysis(
         }
         return {"report": report, "regime_timeline": [], "meta": meta} if return_result else report
 
-    # Winsorize raw returns (robust to outliers); keep **raw** for timeline builder
+    # Winsorize raw returns (robust); keep raw for timeline builder
     r_w_raw = winsorize(r_raw, p=0.005)
     r_w_raw = ensure_finite_series(r_w_raw, fill=np.nan).dropna()
 
-    # prevent degenerate variance
     if r_w_raw.nunique() <= 1:
         rs = np.random.RandomState(random_state)
         r_w_raw = r_w_raw + (1e-8 * rs.normal(size=len(r_w_raw)))
 
-    # ---- Design matrix for HMM from winsorized **raw** returns
+    # ---- Design matrix for HMM
     X = r_w_raw.to_numpy(dtype=float).reshape(-1, 1)
-    # Hard mask any remaining non-finite
     mask = np.isfinite(X[:, 0])
     if not mask.all():
         X = X[mask]
         r_w_raw = r_w_raw.iloc[mask]
 
-    # Robust scaling keeps distributions stable for HMM
     scaler = RobustScaler()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         Xs = scaler.fit_transform(X)
 
-    # Guard again
     if len(Xs) < max(60, min_segment_days * 3):
         report = "REGIME ANALYSIS\n================\n\nInsufficient clean data after sanitization."
         meta = {"method": "hmm_sticky", "n_obs": int(len(Xs))}
@@ -457,15 +446,13 @@ def stable_regime_analysis(
         model = _fit_hmm(Xs, K=K, sticky=sticky, random_state=random_state)
         ic_scores = {K: {"ll": float(model.score(Xs)), "p": _n_params_gaussian_hmm(K), "ic": 0.0}}
 
-    # ---- Predict states
+    # ---- Predict states & enforce minimum segment length
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         z = model.predict(Xs).astype(int)
-
-    # Enforce minimum segment length
     z2 = _min_segment_enforce(z, min_segment_days)
 
-    # ---- For **labeling** only, compute excess series (to rank states by Sharpe-like metric)
+    # ---- For labeling only, compute excess series
     try:
         rf_daily = get_daily_risk_free(r_w_raw.index.min(), r_w_raw.index.max(), index=r_w_raw.index, series="GS10", mode="cc")
     except Exception:
@@ -474,23 +461,21 @@ def stable_regime_analysis(
 
     labels = _label_states_rich(rx_for_labels if len(rx_for_labels) == len(z2) else r_w_raw, z2)
 
-    # ---- Align prices to returns index (these should already match after diff())
-    # Use exact same index; no dropping to keep lengths aligned with states
+    # ---- Align prices to returns index
     prices_aligned = prices.reindex(r_w_raw.index)
-    # If any NaNs slipped in, forward-fill then back-fill (no gaps expected, but be safe)
     if prices_aligned.isna().any():
         prices_aligned = prices_aligned.ffill().bfill()
 
-    # ---- Build standardized timeline (Sharpe computed on excess inside builder)
+    # ---- Build standardized timeline
     tl = build_timeline_from_state_runs(
         index=r_w_raw.index,
         states=z2,
-        returns=r_w_raw,                      # RAW winsorized returns; builder computes excess for Sharpe
+        returns=r_w_raw,                      # raw winsorized returns; builder computes excess for Sharpe
         prices_aligned_to_returns=prices_aligned,
         state_to_label=labels,
     )
 
-    # Intra-regime shock notes (uses *raw* r_raw so dates match)
+    # Intra-regime shock notes
     tl = annotate_intra_regime_shocks(tl, returns=r_raw.reindex(r_w_raw.index))
 
     # Segment-level relabel guardrails
@@ -527,4 +512,36 @@ def stable_regime_analysis(
     if return_result:
         return {"report": report, "regime_timeline": tl.to_dict(orient="records"), "meta": meta}
     else:
-        return report
+        return report  # <-- IMPORTANT: return a plain string (no trailing comma tuple!)
+
+
+# --- Optional convenience (text-only) ---
+def stable_report(
+    assets,
+    *,
+    start_date=None,
+    end_date=None,
+    verbose: bool = False,
+    **kwargs,
+) -> str:
+    """
+    Convenience wrapper: run stable_regime_analysis(return_result=True)
+    and return the 'report' text.
+    """
+    out = stable_regime_analysis(
+        assets,
+        start_date=start_date,
+        end_date=end_date,
+        return_result=True,
+        verbose=verbose,
+        **kwargs,
+    )
+    if isinstance(out, dict) and "report" in out:
+        return str(out["report"])
+    return str(out)
+
+
+__all__ = [
+    "stable_regime_analysis",
+    "stable_report",
+]
